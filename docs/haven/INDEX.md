@@ -18,6 +18,7 @@
 | [**07 — Design System**](./07_DESIGN_SYSTEM.md) | **Sensory & Visual Language** | Architectural minimalism, tactile materials, typographic elegance, dark/warm color schemes, and evoking adult erotic tension through interaction and mystery rather than explicit graphics. |
 | [**08 — Extensions & Platform**](./08_EXTENSIONS_PLATFORM.md) | **Ecosystem & Hardware** | Experience plugins, dynamic toolboxes, Bluetooth hardware integration (chastity cages, vibrators, estim), communication hooks, and ethical constraints for AI assistants. |
 | [**09 — Product Roadmap**](./09_PRODUCT_ROADMAP.md) | **Maturity Horizons & Evaluation** | Implementation maturity horizons (Foundation to Platform), the 10-Point Feature Evaluation Rule, and future development sequencing. |
+| [**Scenario Library**](./scenarios/INDEX.md) | **Internal Design Research Scenarios** | 189 structured human interaction scenarios across 23 dynamic categories, combinations, LDR, polyamory, and ordinary relationship repair. |
 
 ---
 

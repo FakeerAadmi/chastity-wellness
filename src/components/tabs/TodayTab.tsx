@@ -8,12 +8,10 @@ import {
   AlertCircle,
   Sparkles,
   Shield,
-  ArrowRight,
   Send,
   Users,
   Compass,
   Check,
-  Plus,
   Play,
   Flame,
   Gift,
@@ -47,7 +45,6 @@ import {
   TaskProof,
   Experience
 } from '../../types/domain';
-import { SessionCard } from '../sessions/SessionCard';
 import { SessionDetailModal } from '../sessions/SessionDetailModal';
 import { SessionCreationModal } from '../sessions/SessionCreationModal';
 import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
@@ -242,7 +239,6 @@ export const TodayTab: React.FC<TodayTabProps> = ({
 
   const primaryRelationship = INITIAL_RELATIONSHIPS[0];
   const activeDynamics = INITIAL_DYNAMICS.filter(d => d.status === 'active');
-  const activeOrPlannedSessions = sessions.filter(s => s.status === 'active' || s.status === 'planned');
 
   // Things that need user attention
   const incomingPendingRequests = requests.filter(
@@ -626,104 +622,10 @@ export const TodayTab: React.FC<TodayTabProps> = ({
         </section>
       )}
 
-      {/* 3. Core Split: Active Dynamics & Today's Rituals */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2 Cols): Active Dynamics & Active Sessions */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Active Dynamics Overview */}
-          <div className="p-5 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex items-center justify-between border-b border-[#251433] pb-3">
-              <div>
-                <h2 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[#d94f6f]" />
-                  Active Dynamics
-                </h2>
-                <p className="text-xs text-[#b59ebf]">Currently operating within {primaryRelationship.name}</p>
-              </div>
-              <button
-                onClick={() => onNavigateTab('dynamics')}
-                className="text-xs font-semibold text-[#d94f6f] hover:text-[#fae8d7] flex items-center gap-1 transition-colors"
-              >
-                <span>View all</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {activeDynamics.map(dynamic => {
-                return (
-                  <div
-                    key={dynamic.id}
-                    onClick={() => onNavigateTab('dynamics')}
-                    className="p-4 rounded-xl bg-[#130b1a] border border-[#2d163d] hover:border-[#d94f6f]/50 transition-all cursor-pointer group flex flex-col justify-between"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-[#251433] text-[#fae8d7]">
-                          {dynamic.dynamicType.replace('_', ' ')}
-                        </span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Active" />
-                      </div>
-                      <h3 className="text-sm font-bold text-[#fae8d7] group-hover:text-[#d94f6f] transition-colors">
-                        {dynamic.name}
-                      </h3>
-                      <p className="text-xs text-[#b59ebf] line-clamp-2">
-                        {dynamic.description}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-[#200f2e] flex items-center justify-between text-[11px] text-[#8d7596]">
-                      <span>{dynamic.activeAgreementsCount} Agreed Protocols</span>
-                      <span className="text-[#fae8d7] font-medium group-hover:underline">
-                        Details &rarr;
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Active & Planned Practice Sessions */}
-            <div className="mt-4 pt-4 border-t border-[#251433] space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-[#d94f6f]" />
-                    Upcoming &amp; Active Sessions ({activeOrPlannedSessions.length})
-                  </h3>
-                  <p className="text-[11px] text-[#b59ebf]">Structured practices with explicit agreements and readiness.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateSessionOpen(true)}
-                  className="px-3 py-1 rounded-xl text-xs font-semibold bg-[#d94f6f] text-white hover:bg-[#b83856] transition-colors flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>New Session</span>
-                </button>
-              </div>
-
-              {activeOrPlannedSessions.length === 0 ? (
-                <div className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] text-center text-xs text-[#8d7596]">
-                  No active or planned practice sessions scheduled today.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {activeOrPlannedSessions.slice(0, 4).map(sess => (
-                    <SessionCard
-                      key={sess.id}
-                      session={sess}
-                      dynamic={INITIAL_DYNAMICS.find(d => d.id === sess.dynamicId)}
-                      agreement={INITIAL_AGREEMENTS.find(a => sess.agreementIds?.includes(a.id))}
-                      users={ALL_USERS}
-                      currentUserId={CURRENT_USER.id}
-                      onClick={() => setSelectedSessionForDetail(sess)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+      {/* 3. Core Daily Rhythm: Check-in, Devotions, Rituals & Safety */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Daily Connection & Headspace Check-in */}
+        <div className="space-y-6">
 
           {/* Quick Emotional & Dynamic Check-in */}
           <div className="p-5 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">

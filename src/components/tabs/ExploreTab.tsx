@@ -19,21 +19,26 @@ import {
   ChevronRight,
   Users,
   X,
-  Clock
+  Clock,
+  Flame
 } from 'lucide-react';
 import {
   INITIAL_TOOLBOXES,
   INITIAL_RITUALS,
   INITIAL_DYNAMICS,
   INITIAL_RELATIONSHIPS,
+  INITIAL_EXPERIENCES,
+  INITIAL_AGREEMENTS,
   ALL_USERS,
   CURRENT_USER
 } from '../../data/domainDemoData';
-import { ToolboxCategory, Ritual } from '../../types/domain';
+import { ToolboxCategory, Ritual, Experience } from '../../types/domain';
 import { BoundariesTab } from './BoundariesTab';
 import { KnowledgeTab } from './KnowledgeTab';
 import { VaultTab } from './VaultTab';
 import { RitualsTab } from './RitualsTab';
+import { DesiresTab } from './DesiresTab';
+import { ExperiencesTab } from './ExperiencesTab';
 import { RitualCard } from '../rituals/RitualCard';
 import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
 import { CheckInModal } from '../checkins/CheckInModal';
@@ -51,6 +56,8 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeToolId, setActiveToolId] = useState<string | null>(null);
+  const [exploreSection, setExploreSection] = useState<'toolboxes' | 'desires' | 'journeys'>('toolboxes');
+  const [experiences, setExperiences] = useState<Experience[]>(INITIAL_EXPERIENCES);
 
   // Phase 5 interactive rituals & check-in state
   const [rituals, setRituals] = useState<Ritual[]>(INITIAL_RITUALS);
@@ -165,8 +172,68 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">
-      {/* If a tool is open, render its embedded canvas with back action */}
-      {activeToolId && activeTool ? (
+      {/* Primary Discovery Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#251433] pb-3 overflow-x-auto scrollbar-none">
+        <button
+          onClick={() => setExploreSection('toolboxes')}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
+            exploreSection === 'toolboxes'
+              ? 'bg-[#251433] text-[#fae8d7] shadow-sm border border-[#381e47]'
+              : 'text-[#8d7596] hover:text-[#fae8d7]'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5 text-[#d94f6f]" />
+          <span>Practices &amp; Toolboxes</span>
+        </button>
+
+        <button
+          onClick={() => setExploreSection('desires')}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
+            exploreSection === 'desires'
+              ? 'bg-[#251433] text-[#fae8d7] shadow-sm border border-[#381e47]'
+              : 'text-[#8d7596] hover:text-[#fae8d7]'
+          }`}
+        >
+          <Flame className="w-3.5 h-3.5 text-[#d94f6f]" />
+          <span>Desire Discovery</span>
+        </button>
+
+        <button
+          onClick={() => setExploreSection('journeys')}
+          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
+            exploreSection === 'journeys'
+              ? 'bg-[#251433] text-[#fae8d7] shadow-sm border border-[#381e47]'
+              : 'text-[#8d7596] hover:text-[#fae8d7]'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-[#d94f6f]" />
+          <span>Experience Journeys</span>
+        </button>
+      </div>
+
+      {exploreSection === 'desires' && (
+        <DesiresTab onNavigateTab={onNavigateTab} onOpenEmergency={onOpenEmergency} />
+      )}
+
+      {exploreSection === 'journeys' && (
+        <ExperiencesTab
+          experiences={experiences}
+          relationships={INITIAL_RELATIONSHIPS}
+          dynamics={INITIAL_DYNAMICS}
+          agreements={INITIAL_AGREEMENTS}
+          users={ALL_USERS}
+          currentUserId={CURRENT_USER.id}
+          onUpdateExperience={(up) => setExperiences(prev => prev.map(e => e.id === up.id ? up : e))}
+          onCreateExperience={(cr) => setExperiences(prev => [cr, ...prev])}
+          onOpenEmergency={onOpenEmergency}
+          onNavigateTab={onNavigateTab}
+        />
+      )}
+
+      {exploreSection === 'toolboxes' && (
+        <>
+          {/* If a tool is open, render its embedded canvas with back action */}
+          {activeToolId && activeTool ? (
         <div className="space-y-6">
           <div className="flex items-center justify-between p-4 rounded-2xl bg-[#1c1026] border border-[#251433]">
             <button
@@ -522,6 +589,8 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
             </div>
           )}
         </div>
+      )}
+      </>
       )}
 
       {/* Ritual Execution Modal */}

@@ -46,15 +46,19 @@ export const Header: React.FC<HeaderProps> = ({
   experiencesActiveCount = 0
 }) => {
   const tabs = [
-    { id: 'today', label: 'Today', icon: Sparkles },
-    { id: 'relationships', label: 'Relationships', icon: Users },
-    { id: 'dynamics', label: 'Dynamics', icon: Heart },
-    { id: 'experiences', label: 'Experiences', icon: Layers, badge: experiencesActiveCount },
-    { id: 'desires', label: 'Desires', icon: Flame },
-    { id: 'requests', label: 'Requests', icon: Inbox, badge: pendingRequestsCount },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare, badge: tasksDueCount },
+    {
+      id: 'today',
+      label: 'Today',
+      icon: Sparkles,
+      badge: pendingRequestsCount + tasksDueCount > 0 ? pendingRequestsCount + tasksDueCount : undefined
+    },
+    {
+      id: 'relationships',
+      label: 'Relationships',
+      icon: Users,
+      badge: experiencesActiveCount > 0 ? experiencesActiveCount : undefined
+    },
     { id: 'explore', label: 'Explore', icon: Compass },
-    { id: 'community', label: 'Community', icon: MessageSquare },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

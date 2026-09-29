@@ -22,7 +22,6 @@ import {
   Check,
   Flame,
   MessageSquare,
-  Key,
   ListChecks
 } from 'lucide-react';
 import {
@@ -96,6 +95,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   const [selectedRelId, setSelectedRelId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [filterStatus, setFilterStatus] = useState<RelationshipStatus | 'all'>('active');
+  const [detailSubTab, setDetailSubTab] = useState<'practices' | 'agreements' | 'desires' | 'history'>('practices');
 
   // Creation Wizard State
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -894,548 +894,588 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
             </div>
           </div>
 
-          {/* Section 1: Participants */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5 text-[#d94f6f]" />
-                  Participants ({selectedRelationship.participants.length})
-                </h3>
-                <p className="text-xs text-[#b59ebf] mt-0.5">
-                  Consensual members participating in this connection container.
-                </p>
+          {/* Relationship Pulse Banner */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#20102b] via-[#1a0c24] to-[#14081c] border border-[#3b1d4c] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#d94f6f]">
+                  Relationship Pulse
+                </span>
+                <span className="text-xs text-[#8d7596]">•</span>
+                <span className="text-xs text-[#fae8d7] font-medium">
+                  {currentRelDynamics[0]?.name || 'Active Connection'}
+                </span>
               </div>
-
-              <button
-                onClick={() => setIsAddParticipantOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
-              >
-                <UserPlus className="w-3.5 h-3.5 text-[#d94f6f]" />
-                <span>Add participant</span>
-              </button>
+              <div className="flex items-center gap-3 text-xs text-[#b59ebf] flex-wrap pt-0.5">
+                <span>{currentRelDynamics.length} Dynamics</span>
+                <span>•</span>
+                <span>{activeAgreementsCount} Agreed Protocols</span>
+                <span>•</span>
+                <span>{pendingRelRequests.length} Pending Requests</span>
+                <span>•</span>
+                <span>{currentRelTasks.filter(t => t.status === 'pending').length} Active Devotions</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {selectedRelationship.participants.map(part => (
-                <div
-                  key={part.userId}
-                  className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-bold text-[#fae8d7]">{part.displayName}</span>
-                      {part.userId === CURRENT_USER.id && (
-                        <span className="text-[10px] text-[#d94f6f] font-bold px-1.5 py-0.5 rounded bg-[#251433]">
-                          (You)
-                        </span>
-                      )}
-                    </div>
-                    {/* Cleanly omitted if no role description exists */}
-                    {part.roleDescription ? (
-                      <span className="text-xs text-[#d94f6f] block font-medium">
-                        {part.roleDescription}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <span className="text-[10px] text-[#8d7596] mt-3 pt-2 border-t border-[#200f2e] block">
-                    Joined{' '}
-                    {new Date(part.joinedAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      year: 'numeric'
-                    })}
-                  </span>
-                </div>
-              ))}
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              <button
+                onClick={() => setIsCreateAgreementOpen(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="w-3 h-3 text-[#d4af37]" />
+                <span>Agreement</span>
+              </button>
+              <button
+                onClick={() => setIsCreateRequestOpen(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="w-3 h-3 text-[#d94f6f]" />
+                <span>Request</span>
+              </button>
+              <button
+                onClick={() => setIsCreateSessionOpen(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#d94f6f] hover:bg-[#b83856] text-white transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <Play className="w-3 h-3" />
+                <span>Session</span>
+              </button>
             </div>
           </div>
 
-          {/* Section 2: Associated Dynamics */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-[#d94f6f]" />
-                  Associated Dynamics ({currentRelDynamics.length})
-                </h3>
-                <p className="text-xs text-[#b59ebf] mt-0.5">
-                  Consensual practices and protocols active within this relationship.
-                </p>
-              </div>
+          {/* Subtabs for Progressive Disclosure */}
+          <div className="flex items-center gap-2 border-b border-[#251433] pb-2 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => setDetailSubTab('practices')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
+                detailSubTab === 'practices'
+                  ? 'bg-[#251433] text-[#fae8d7] shadow-sm border border-[#381e47]'
+                  : 'text-[#8d7596] hover:text-[#fae8d7]'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#d94f6f]" />
+              <span>Dynamics &amp; Practices</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#160b1e] text-[#b59ebf]">
+                {currentRelDynamics.length}
+              </span>
+            </button>
 
-              {onNavigateTab && (
-                <button
-                  onClick={() => onNavigateTab('dynamics')}
-                  className="text-xs font-semibold text-[#d94f6f] hover:underline flex items-center gap-1"
-                >
-                  <span>Explore dynamics</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
+            <button
+              onClick={() => setDetailSubTab('agreements')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
+                detailSubTab === 'agreements'
+                  ? 'bg-[#251433] text-[#fae8d7] shadow-sm border border-[#381e47]'
+                  : 'text-[#8d7596] hover:text-[#fae8d7]'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5 text-[#d4af37]" />
+              <span>Agreements &amp; Safety</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#160b1e] text-[#b59ebf]">
+                {activeAgreementsCount}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setDetailSubTab('desires')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
+                detailSubTab === 'desires'
+                  ? 'bg-[#251433] text-[#fae8d7] shadow-sm border border-[#381e47]'
+                  : 'text-[#8d7596] hover:text-[#fae8d7]'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 text-[#d94f6f]" />
+              <span>Desires &amp; Proposals</span>
+              {pendingRelRequests.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-950/70 text-amber-400 border border-amber-800/40">
+                  {pendingRelRequests.length}
+                </span>
               )}
-            </div>
+            </button>
 
-            {currentRelDynamics.length === 0 ? (
-              <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
-                <Sparkles className="w-6 h-6 text-[#8d7596] mx-auto opacity-40" />
-                <p className="text-xs font-semibold text-[#fae8d7]">No dynamics yet</p>
-                <p className="text-xs text-[#8d7596] max-w-sm mx-auto">
-                  Dynamics allow you to structure consensual practices, boundaries, and rituals with partners.
-                </p>
-                {onNavigateTab && (
-                  <button
-                    onClick={() => onNavigateTab('dynamics')}
-                    className="mt-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] transition-colors"
-                  >
-                    Explore dynamics
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {currentRelDynamics.map(dyn => (
-                  <div
-                    key={dyn.id}
-                    onClick={() => onNavigateDynamic && onNavigateDynamic(dyn.id)}
-                    className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] hover:border-[#d94f6f]/50 transition-all cursor-pointer group flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#d94f6f]">
-                          {formatDynamicType(dyn.dynamicType)}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {dyn.practiceStage && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#160b1e] border border-[#2d163d] text-[#b59ebf] capitalize font-medium">
-                              {formatPracticeStage(dyn.practiceStage)}
+            <button
+              onClick={() => setDetailSubTab('history')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 shrink-0 ${
+                detailSubTab === 'history'
+                  ? 'bg-[#251433] text-[#fae8d7] shadow-sm border border-[#381e47]'
+                  : 'text-[#8d7596] hover:text-[#fae8d7]'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5 text-[#8d7596]" />
+              <span>Timeline</span>
+            </button>
+          </div>
+
+          {/* Subtab 1: Dynamics, Sessions & Rituals */}
+          {detailSubTab === 'practices' && (
+            <div className="space-y-6">
+              {/* Associated Dynamics */}
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-[#d94f6f]" />
+                    Associated Dynamics ({currentRelDynamics.length})
+                  </h3>
+
+                  {onNavigateTab && (
+                    <button
+                      onClick={() => onNavigateTab('dynamics')}
+                      className="text-xs font-semibold text-[#d94f6f] hover:underline flex items-center gap-1"
+                    >
+                      <span>Explore dynamics</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {currentRelDynamics.length === 0 ? (
+                  <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                    <Sparkles className="w-6 h-6 text-[#8d7596] mx-auto opacity-40" />
+                    <p className="text-xs font-semibold text-[#fae8d7]">No dynamics anchored yet</p>
+                    <p className="text-xs text-[#8d7596] max-w-sm mx-auto">
+                      Structure consensual practices, boundaries, and rituals with your partner.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {currentRelDynamics.map(dyn => (
+                      <div
+                        key={dyn.id}
+                        onClick={() => onNavigateDynamic && onNavigateDynamic(dyn.id)}
+                        className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] hover:border-[#d94f6f]/50 transition-all cursor-pointer group flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#d94f6f]">
+                              {formatDynamicType(dyn.dynamicType)}
                             </span>
+                            <div className="flex items-center gap-1.5">
+                              {dyn.practiceStage && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#160b1e] border border-[#2d163d] text-[#b59ebf] capitalize font-medium">
+                                  {formatPracticeStage(dyn.practiceStage)}
+                                </span>
+                              )}
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-[#251433] text-[#fae8d7] capitalize font-medium">
+                                {dyn.status}
+                              </span>
+                            </div>
+                          </div>
+                          <h4 className="text-sm font-bold text-[#fae8d7] group-hover:text-[#d94f6f] transition-colors">
+                            {dyn.name}
+                          </h4>
+                          <p className="text-xs text-[#b59ebf] line-clamp-2 mt-1">
+                            {dyn.description}
+                          </p>
+
+                          {dyn.tags && dyn.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {dyn.tags.map(tag => (
+                                <span
+                                  key={tag}
+                                  className="px-2 py-0.5 rounded-md bg-[#160b1e] border border-[#2d163d] text-[10px] font-medium text-[#b59ebf]"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
                           )}
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-[#251433] text-[#fae8d7] capitalize font-medium">
-                            {dyn.status}
+                        </div>
+
+                        <div className="mt-4 pt-2.5 border-t border-[#200f2e] flex items-center justify-between text-xs text-[#8d7596]">
+                          <span>{dyn.participantIds.length} Participants • {dyn.activeAgreementsCount} Agreed Protocols</span>
+                          <span className="text-[#fae8d7] font-semibold group-hover:underline flex items-center gap-1">
+                            <span>Inspect</span>
+                            <ArrowRight className="w-3 h-3" />
                           </span>
                         </div>
                       </div>
-                      <h4 className="text-sm font-bold text-[#fae8d7] group-hover:text-[#d94f6f] transition-colors">
-                        {dyn.name}
-                      </h4>
-                      <p className="text-xs text-[#b59ebf] line-clamp-2 mt-1">
-                        {dyn.description}
-                      </p>
-
-                      {/* Descriptive Tags */}
-                      {dyn.tags && dyn.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {dyn.tags.map(tag => (
-                            <span
-                              key={tag}
-                              className="px-2 py-0.5 rounded-md bg-[#160b1e] border border-[#2d163d] text-[10px] font-medium text-[#b59ebf]"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-2.5 border-t border-[#200f2e] flex items-center justify-between text-xs text-[#8d7596]">
-                      <span>{dyn.participantIds.length} Participants • {dyn.activeAgreementsCount} Agreed Boundaries</span>
-                      <span className="text-[#fae8d7] font-semibold group-hover:underline flex items-center gap-1">
-                        <span>Inspect</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </span>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Section 3: Shared Agreements & Boundaries (Phase 4 First-Class Product Area) */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-[#d4af37]" />
-                  <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
-                    Agreements &amp; Boundary Compacts ({currentRelAgreements.length})
+              {/* Practice Sessions */}
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-[#d94f6f]" />
+                    Practice &amp; Play Sessions ({currentRelSessions.length})
                   </h3>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateSessionOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d94f6f] text-white hover:bg-[#b83856] transition-colors flex items-center gap-1.5 shadow-sm self-start sm:self-center"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>New Session</span>
+                  </button>
                 </div>
-                <p className="text-xs text-[#b59ebf] mt-0.5">
-                  {activeAgreementsCount} active • {pendingAgreementsCount} in negotiation • {pausedRetiredCount} paused/archived
-                </p>
+
+                {currentRelSessions.length === 0 ? (
+                  <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                    <p className="text-xs text-[#8d7596]">No practice sessions recorded yet.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {currentRelSessions.map(sess => (
+                      <SessionCard
+                        key={sess.id}
+                        session={sess}
+                        dynamic={INITIAL_DYNAMICS.find(d => d.id === sess.dynamicId)}
+                        agreement={agreements.find(a => sess.agreementIds?.includes(a.id))}
+                        users={ALL_USERS}
+                        currentUserId={CURRENT_USER.id}
+                        onClick={() => setSelectedSessionForDetail(sess)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsCreateAgreementOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d4af37] text-black hover:bg-[#e6c250] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d4af37]/10 self-start sm:self-center"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Propose Agreement</span>
-              </button>
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#251433]">
-              {[
-                { id: 'all', label: `All (${currentRelAgreements.length})` },
-                { id: 'active', label: `Active (${activeAgreementsCount})` },
-                { id: 'negotiating', label: `In Negotiation (${pendingAgreementsCount})` },
-                { id: 'paused_retired', label: `Paused / Retired (${pausedRetiredCount})` },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setAgreementFilter(tab.id as 'all' | 'active' | 'negotiating' | 'paused_retired')}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    agreementFilter === tab.id
-                      ? 'bg-[#d4af37] text-black font-semibold'
-                      : 'bg-[#130b1a] text-[#b59ebf] hover:text-[#fae8d7] border border-[#251433]'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {filteredRelAgreements.length === 0 ? (
-              <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
-                <p className="text-xs text-[#8d7596]">No agreements found under this filter view.</p>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateAgreementOpen(true)}
-                  className="text-xs text-[#d4af37] font-semibold hover:underline"
-                >
-                  Propose an agreement for {selectedRelationship.name}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredRelAgreements.map(agr => (
-                  <AgreementCard
-                    key={agr.id}
-                    agreement={agr}
-                    dynamic={INITIAL_DYNAMICS.find(d => d.id === agr.dynamicId)}
-                    users={ALL_USERS}
-                    currentUserId="usr_alex"
-                    onClick={() => setSelectedAgreementForDetail(agr)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section: Shared Desires & Double-Blind Exploration (Phase 6) */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-[#d94f6f]" />
-                  <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
-                    Shared Desires &amp; Exploration ({currentRelDesires.length})
-                  </h3>
-                  {currentRelMutualDesires.length > 0 && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-800/40 font-bold">
-                      {currentRelMutualDesires.length} Mutual Match{currentRelMutualDesires.length > 1 ? 'es' : ''}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-[#b59ebf] mt-0.5">
-                  Double-blind discovery reveals ideas only when partners express mutual curiosity. No consent is implied by desire.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 self-start sm:self-center">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateDesireOpen(true)}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
-                  <span>Add Desire</span>
-                </button>
-              </div>
-            </div>
-
-            {currentRelDesires.length === 0 ? (
-              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
-                <p className="text-xs text-[#8d7596]">No shared desires recorded for this relationship yet.</p>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateDesireOpen(true)}
-                  className="text-xs text-[#d94f6f] font-semibold hover:underline"
-                >
-                  Add a desire to explore with {selectedRelationship.name}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {currentRelDesires.map(desire => (
-                  <DesireCard
-                    key={desire.id}
-                    desire={desire}
-                    currentUser={CURRENT_USER}
-                    allUsers={ALL_USERS}
-                    onRateDesire={handleRateDesire}
-                    onProposeRequest={() => setIsCreateRequestOpen(true)}
-                    onDraftAgreement={() => setIsCreateAgreementOpen(true)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section: Requests & Formal Permissions (Phase 6) */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-[#d94f6f]" />
-                  <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
-                    Requests &amp; Formal Permissions ({currentRelRequests.length})
-                  </h3>
-                  {pendingRelRequests.length > 0 && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-950/70 text-amber-400 border border-amber-800/40 font-bold">
-                      {pendingRelRequests.length} Pending
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-[#b59ebf] mt-0.5">
-                  Asynchronous proposals, chastity unlock requests, protocol waivers, and scene proposals with counter-offers.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsCreateRequestOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5 self-start sm:self-center"
-              >
-                <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
-                <span>Propose Request</span>
-              </button>
-            </div>
-
-            {currentRelRequests.length === 0 ? (
-              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
-                <p className="text-xs text-[#8d7596]">No requests or permission inquiries in this relationship.</p>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateRequestOpen(true)}
-                  className="text-xs text-[#d94f6f] font-semibold hover:underline"
-                >
-                  Send a request to {selectedRelationship.name}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {currentRelRequests.map(req => (
-                  <RequestCard
-                    key={req.id}
-                    request={req}
-                    currentUser={CURRENT_USER}
-                    allUsers={ALL_USERS}
-                    onRespond={handleRespondRequest}
-                    onCounterPropose={handleCounterProposeRequest}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section: Tasks & Daily Devotions (Phase 6) */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <ListChecks className="w-4 h-4 text-[#d94f6f]" />
-                  <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
-                    Tasks &amp; Devotions ({currentRelTasks.length})
-                  </h3>
-                  {pendingRelTasks.length > 0 && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#d94f6f]/20 text-[#d94f6f] border border-[#d94f6f]/30 font-bold">
-                      {pendingRelTasks.length} Active
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-[#b59ebf] mt-0.5">
-                  D/s assignments, domestic duties, hygiene protocols, and sensual devotions. No streak penalties or gamification.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsCreateTaskOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5 self-start sm:self-center"
-              >
-                <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
-                <span>Assign Task</span>
-              </button>
-            </div>
-
-            {currentRelTasks.length === 0 ? (
-              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
-                <p className="text-xs text-[#8d7596]">No tasks or devotions currently assigned for this relationship.</p>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateTaskOpen(true)}
-                  className="text-xs text-[#d94f6f] font-semibold hover:underline"
-                >
-                  Assign a devotion or task for {selectedRelationship.name}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {currentRelTasks.map(t => (
-                  <TaskCard
-                    key={t.id}
-                    task={t}
-                    currentUser={CURRENT_USER}
-                    allUsers={ALL_USERS}
-                    onToggleComplete={handleToggleCompleteTask}
-                    onSubmitProof={handleSubmitProofTask}
-                    onVerifyProof={handleVerifyProofTask}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section 4: Scheduled & Practice Sessions */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-[#d94f6f]" />
-                  Practice &amp; Play Sessions ({currentRelSessions.length})
-                </h3>
-                <p className="text-xs text-[#b59ebf] mt-0.5">
-                  Consensual practice instances, check-in windows, and scheduled connection time.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsCreateSessionOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d94f6f] text-white hover:bg-[#b83856] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d94f6f]/10 self-start sm:self-center"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>New Session</span>
-              </button>
-            </div>
-
-            {currentRelSessions.length === 0 ? (
-              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
-                <p className="text-xs text-[#8d7596]">No practice sessions recorded for this relationship yet.</p>
-                <button
-                  type="button"
-                  onClick={() => setIsCreateSessionOpen(true)}
-                  className="text-xs text-[#d94f6f] font-semibold hover:underline"
-                >
-                  Schedule or start a session for {selectedRelationship.name}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {currentRelSessions.map(sess => (
-                  <SessionCard
-                    key={sess.id}
-                    session={sess}
-                    dynamic={INITIAL_DYNAMICS.find(d => d.id === sess.dynamicId)}
-                    agreement={agreements.find(a => sess.agreementIds?.includes(a.id))}
-                    users={ALL_USERS}
-                    currentUserId={CURRENT_USER.id}
-                    onClick={() => setSelectedSessionForDetail(sess)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section 5: Dynamic Rituals & Practices */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+              {/* Dynamic Rituals */}
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
                 <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
                   <Heart className="w-3.5 h-3.5 text-[#d94f6f]" />
                   Dynamic Rituals &amp; Recurring Practices ({currentRelRituals.length})
                 </h3>
-                <p className="text-xs text-[#b59ebf] mt-0.5">
-                  Interactive protocols designed to cultivate intimacy and maintain intentionality.
-                </p>
-              </div>
-            </div>
 
-            {currentRelRituals.length === 0 ? (
-              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
-                No recurring rituals currently anchored to this relationship.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {currentRelRituals.map(rit => (
-                  <RitualCard
-                    key={rit.id}
-                    ritual={rit}
-                    dynamic={INITIAL_DYNAMICS.find(d => d.id === rit.dynamicId)}
-                    onRunRitual={r => setSelectedRitualForExecution(r)}
-                    onClick={() => setSelectedRitualForExecution(rit)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section 6: Recent Activity Feed */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div>
-              <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-[#d94f6f]" />
-                Recent Activity
-              </h3>
-              <p className="text-xs text-[#b59ebf] mt-0.5">
-                Projected timeline derived from check-ins, sessions, rituals, and agreements.
-              </p>
-            </div>
-
-            {currentRelActivity.length === 0 ? (
-              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
-                No recent activity recorded for this relationship yet.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {currentRelActivity.map(event => (
-                  <div
-                    key={event.id}
-                    className="p-3.5 rounded-xl bg-[#130b1a] border border-[#251433] flex items-start gap-3"
-                  >
-                    <div className="p-2 rounded-lg bg-[#251433] text-[#d94f6f] shrink-0 mt-0.5">
-                      {event.type === 'checkin' && <CheckCircle2 className="w-3.5 h-3.5" />}
-                      {event.type === 'session' && <Clock className="w-3.5 h-3.5" />}
-                      {event.type === 'ritual' && <Heart className="w-3.5 h-3.5" />}
-                      {event.type === 'agreement' && <Shield className="w-3.5 h-3.5" />}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-[#fae8d7]">{event.title}</span>
-                        <span className="text-[10px] text-[#8d7596]">
-                          {formatTimeSnippet(event.timestamp)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#b59ebf] mt-0.5">{event.description}</p>
-                    </div>
+                {currentRelRituals.length === 0 ? (
+                  <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
+                    No recurring rituals currently anchored to this relationship.
                   </div>
-                ))}
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {currentRelRituals.map(rit => (
+                      <RitualCard
+                        key={rit.id}
+                        ritual={rit}
+                        dynamic={INITIAL_DYNAMICS.find(d => d.id === rit.dynamicId)}
+                        onRunRitual={r => setSelectedRitualForExecution(r)}
+                        onClick={() => setSelectedRitualForExecution(rit)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Privacy Guard Notice */}
-          <div className="p-4 rounded-xl bg-[#100717] border border-[#251433] flex items-start gap-3">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <div className="text-[11px] text-[#8d7596] leading-relaxed">
-              <strong className="text-[#b59ebf]">Privacy Guard:</strong> Relationship metadata and participant settings are preserved in privacy-aware local storage. Sensitive dynamic logs, health alerts, and personal reflections remain isolated and are never shared without explicit consent.
             </div>
-          </div>
+          )}
+
+          {/* Subtab 2: Agreements & Safety */}
+          {detailSubTab === 'agreements' && (
+            <div className="space-y-6">
+              {/* Shared Agreements & Boundaries */}
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-[#d4af37]" />
+                      <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
+                        Agreements &amp; Boundary Compacts ({currentRelAgreements.length})
+                      </h3>
+                    </div>
+                    <p className="text-xs text-[#b59ebf] mt-0.5">
+                      {activeAgreementsCount} active • {pendingAgreementsCount} in negotiation • {pausedRetiredCount} paused/archived
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateAgreementOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d4af37] text-black hover:bg-[#e6c250] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d4af37]/10 self-start sm:self-center"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Propose Agreement</span>
+                  </button>
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#251433]">
+                  {[
+                    { id: 'all', label: `All (${currentRelAgreements.length})` },
+                    { id: 'active', label: `Active (${activeAgreementsCount})` },
+                    { id: 'negotiating', label: `In Negotiation (${pendingAgreementsCount})` },
+                    { id: 'paused_retired', label: `Paused / Retired (${pausedRetiredCount})` },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setAgreementFilter(tab.id as 'all' | 'active' | 'negotiating' | 'paused_retired')}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        agreementFilter === tab.id
+                          ? 'bg-[#d4af37] text-black font-semibold'
+                          : 'bg-[#130b1a] text-[#b59ebf] hover:text-[#fae8d7] border border-[#251433]'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {filteredRelAgreements.length === 0 ? (
+                  <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                    <p className="text-xs text-[#8d7596]">No agreements found under this filter view.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {filteredRelAgreements.map(agr => (
+                      <AgreementCard
+                        key={agr.id}
+                        agreement={agr}
+                        dynamic={INITIAL_DYNAMICS.find(d => d.id === agr.dynamicId)}
+                        users={ALL_USERS}
+                        currentUserId="usr_alex"
+                        onClick={() => setSelectedAgreementForDetail(agr)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Participants & Roles */}
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5 text-[#d94f6f]" />
+                    Participants ({selectedRelationship.participants.length})
+                  </h3>
+
+                  <button
+                    onClick={() => setIsAddParticipantOpen(true)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                    <span>Add participant</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {selectedRelationship.participants.map(part => (
+                    <div
+                      key={part.userId}
+                      className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-bold text-[#fae8d7]">{part.displayName}</span>
+                          {part.userId === CURRENT_USER.id && (
+                            <span className="text-[10px] text-[#d94f6f] font-bold px-1.5 py-0.5 rounded bg-[#251433]">
+                              (You)
+                            </span>
+                          )}
+                        </div>
+                        {part.roleDescription ? (
+                          <span className="text-xs text-[#d94f6f] block font-medium">
+                            {part.roleDescription}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <span className="text-[10px] text-[#8d7596] mt-3 pt-2 border-t border-[#200f2e] block">
+                        Joined{' '}
+                        {new Date(part.joinedAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Subtab 3: Desires & Proposals */}
+          {detailSubTab === 'desires' && (
+            <div className="space-y-6">
+              {/* Shared Desires */}
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-[#d94f6f]" />
+                    <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
+                      Shared Desires ({currentRelDesires.length})
+                    </h3>
+                    {currentRelMutualDesires.length > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-800/40 font-bold">
+                        {currentRelMutualDesires.length} Mutual Match{currentRelMutualDesires.length > 1 ? 'es' : ''}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateDesireOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5 self-start sm:self-center"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                    <span>Add Desire</span>
+                  </button>
+                </div>
+
+                {currentRelDesires.length === 0 ? (
+                  <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
+                    No shared desires recorded yet.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {currentRelDesires.map(desire => (
+                      <DesireCard
+                        key={desire.id}
+                        desire={desire}
+                        currentUser={CURRENT_USER}
+                        allUsers={ALL_USERS}
+                        onRateDesire={handleRateDesire}
+                        onProposeRequest={() => setIsCreateRequestOpen(true)}
+                        onDraftAgreement={() => setIsCreateAgreementOpen(true)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Requests & Permissions */}
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-[#d94f6f]" />
+                    <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
+                      Requests &amp; Formal Permissions ({currentRelRequests.length})
+                    </h3>
+                    {pendingRelRequests.length > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-950/70 text-amber-400 border border-amber-800/40 font-bold">
+                        {pendingRelRequests.length} Pending
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateRequestOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5 self-start sm:self-center"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                    <span>Propose Request</span>
+                  </button>
+                </div>
+
+                {currentRelRequests.length === 0 ? (
+                  <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
+                    No pending requests or permission inquiries.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {currentRelRequests.map(req => (
+                      <RequestCard
+                        key={req.id}
+                        request={req}
+                        currentUser={CURRENT_USER}
+                        allUsers={ALL_USERS}
+                        onRespond={handleRespondRequest}
+                        onCounterPropose={handleCounterProposeRequest}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tasks & Devotions */}
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <ListChecks className="w-4 h-4 text-[#d94f6f]" />
+                    <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
+                      Tasks &amp; Devotions ({currentRelTasks.length})
+                    </h3>
+                    {pendingRelTasks.length > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#d94f6f]/20 text-[#d94f6f] border border-[#d94f6f]/30 font-bold">
+                        {pendingRelTasks.length} Active
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateTaskOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5 self-start sm:self-center"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                    <span>Assign Task</span>
+                  </button>
+                </div>
+
+                {currentRelTasks.length === 0 ? (
+                  <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
+                    No tasks currently assigned for this relationship.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {currentRelTasks.map(t => (
+                      <TaskCard
+                        key={t.id}
+                        task={t}
+                        currentUser={CURRENT_USER}
+                        allUsers={ALL_USERS}
+                        onToggleComplete={handleToggleCompleteTask}
+                        onSubmitProof={handleSubmitProofTask}
+                        onVerifyProof={handleVerifyProofTask}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Subtab 4: History / Timeline */}
+          {detailSubTab === 'history' && (
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-[#d94f6f]" />
+                  Recent Activity
+                </h3>
+
+                {currentRelActivity.length === 0 ? (
+                  <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
+                    No recent activity recorded for this relationship yet.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {currentRelActivity.map(event => (
+                      <div
+                        key={event.id}
+                        className="p-3.5 rounded-xl bg-[#130b1a] border border-[#251433] flex items-start gap-3"
+                      >
+                        <div className="p-2 rounded-lg bg-[#251433] text-[#d94f6f] shrink-0 mt-0.5">
+                          {event.type === 'checkin' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                          {event.type === 'session' && <Clock className="w-3.5 h-3.5" />}
+                          {event.type === 'ritual' && <Heart className="w-3.5 h-3.5" />}
+                          {event.type === 'agreement' && <Shield className="w-3.5 h-3.5" />}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-[#fae8d7]">{event.title}</span>
+                            <span className="text-[10px] text-[#8d7596]">
+                              {formatTimeSnippet(event.timestamp)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#b59ebf] mt-0.5">{event.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#100717] border border-[#251433] flex items-start gap-3">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="text-[11px] text-[#8d7596] leading-relaxed">
+                  <strong className="text-[#b59ebf]">Privacy Guard:</strong> Relationship data is encrypted and preserved locally. Reflections and sensitive logs remain strictly confidential.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
