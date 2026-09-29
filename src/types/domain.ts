@@ -199,7 +199,7 @@ export interface Dynamic {
 }
 
 // ==========================================
-// 4. AGREEMENT & NEGOTIATION
+// 4. AGREEMENT & NEGOTIATION (Phase 4 Canonical Model)
 // ==========================================
 export type AgreementScope =
   | 'interest'
@@ -209,14 +209,23 @@ export type AgreementScope =
   | 'active_state';
 
 export type ConsentStatus =
-  | 'agreed'
-  | 'pending'
-  | 'declined'
+  | 'draft'
+  | 'negotiating'
+  | 'pending_approval'
+  | 'active'
+  | 'agreed'           // alias for active
+  | 'pending'          // alias for negotiating
   | 'paused'
+  | 'retired'
   | 'revoked'
+  | 'declined'
   | 'expired';
 
 export type NegotiationResponse =
+  | 'approved'
+  | 'changes_requested'
+  | 'declined'
+  | 'pending'
   | 'definitely_interested'
   | 'interested'
   | 'maybe'
@@ -224,32 +233,59 @@ export type NegotiationResponse =
   | 'not_interested'
   | 'hard_boundary';
 
+export type AgreementSectionCategory =
+  | 'intent'
+  | 'boundaries'
+  | 'permissions'
+  | 'expectations'
+  | 'safewords'
+  | 'safety'
+  | 'communication'
+  | 'aftercare'
+  | 'exceptions'
+  | 'review'
+  | 'custom';
+
+export interface AgreementSection {
+  id: string;
+  category?: AgreementSectionCategory;
+  title: string;
+  content: string;
+  order?: number;
+}
+
 export interface AgreementParticipantResponse {
   participantId: string;
   response: NegotiationResponse;
   conditions?: string;
-  respondedAt: string;
+  note?: string;
+  respondedAt?: string;
 }
 
 export interface AgreementRevision {
   revisionId: string;
-  text: string;
+  version?: number;
+  text?: string;
+  summary?: string;
   revisedAt: string;
   revisedBy: string;
   reason?: string;
+  changes?: string;
 }
 
 export interface Agreement {
   id: string;
-  dynamicId: string;
+  dynamicId?: string;
   relationshipId: string;
   title: string;
   scope: AgreementScope;
   content: string;
+  sections?: AgreementSection[];
   participantResponses: AgreementParticipantResponse[];
   status: ConsentStatus;
   effectiveFrom?: string;
   expiresAt?: string;
+  reviewDate?: string;
   revisionHistory: AgreementRevision[];
   revokedAt?: string;
   revocationReason?: string;

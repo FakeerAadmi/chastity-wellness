@@ -10,7 +10,6 @@ import {
   Heart,
   FileCheck,
   MessageSquare,
-  CheckCircle2,
   ChevronRight,
   Search,
   X,
@@ -20,17 +19,21 @@ import {
   INITIAL_DYNAMICS,
   INITIAL_RELATIONSHIPS,
   INITIAL_AGREEMENTS,
-  CURRENT_USER
+  CURRENT_USER,
+  ALL_USERS
 } from '../../data/domainDemoData';
 import {
   Dynamic,
   DynamicStatus,
   CoreDynamicType,
   DynamicPracticeStage,
-  ADULT_EXPRESSION_TAXONOMY
+  ADULT_EXPRESSION_TAXONOMY,
+  Agreement,
 } from '../../types/domain';
+import { AgreementCard } from '../agreements/AgreementCard';
+import { AgreementDetailModal } from '../agreements/AgreementDetailModal';
+import { AgreementCreationModal } from '../agreements/AgreementCreationModal';
 import {
-  formatAgreementScope,
   formatDynamicType,
   formatPracticeStage
 } from '../../types/legacyAdapters';
@@ -65,9 +68,25 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
   const [newDesc, setNewDesc] = useState('');
   const [newRelId, setNewRelId] = useState(INITIAL_RELATIONSHIPS[0]?.id || '');
 
+  const [agreements, setAgreements] = useState<Agreement[]>(INITIAL_AGREEMENTS);
+  const [selectedAgreementForDetail, setSelectedAgreementForDetail] = useState<Agreement | null>(null);
+  const [isCreateAgreementOpen, setIsCreateAgreementOpen] = useState(false);
+
   const selectedDynamic = dynamics.find(d => d.id === selectedDynamicId);
   const selectedRel = INITIAL_RELATIONSHIPS.find(r => r.id === selectedDynamic?.relationshipId);
-  const dynamicAgreements = INITIAL_AGREEMENTS.filter(a => a.dynamicId === selectedDynamic?.id);
+  const dynamicAgreements = agreements.filter(a => a.dynamicId === selectedDynamic?.id);
+
+  const handleUpdateAgreement = (updated: Agreement) => {
+    setAgreements(prev => prev.map(a => a.id === updated.id ? updated : a));
+    if (selectedAgreementForDetail?.id === updated.id) {
+      setSelectedAgreementForDetail(updated);
+    }
+  };
+
+  const handleCreateAgreement = (newAgr: Agreement) => {
+    setAgreements(prev => [newAgr, ...prev]);
+    setSelectedAgreementForDetail(newAgr);
+  };
 
   // Available descriptive tags extracted across dynamics
   const availableTags = Array.from(
@@ -593,47 +612,47 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
           {/* Sub-Tab Contents */}
           {activeSubTab === 'overview' && (
             <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
-              <div className="flex items-center justify-between border-b border-[#251433] pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-[#d94f6f]" />
+                    <Shield className="w-4 h-4 text-[#d4af37]" />
                     Agreed Protocols &amp; Boundaries ({dynamicAgreements.length})
                   </h3>
                   <p className="text-xs text-[#b59ebf]">Mutual boundaries negotiated with affirmative consent.</p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateAgreementOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d4af37] text-black hover:bg-[#e6c250] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d4af37]/10 self-start sm:self-center"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Propose Agreement</span>
+                </button>
               </div>
 
               {dynamicAgreements.length === 0 ? (
-                <div className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
-                  No formal agreements registered yet for this dynamic.
+                <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                  <p className="text-xs text-[#8d7596]">No formal agreements registered yet for this dynamic.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateAgreementOpen(true)}
+                    className="text-xs text-[#d4af37] font-semibold hover:underline"
+                  >
+                    Propose an agreement for {selectedDynamic.name}
+                  </button>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {dynamicAgreements.map(agr => (
-                    <div
+                    <AgreementCard
                       key={agr.id}
-                      className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] flex flex-col sm:flex-row sm:items-start justify-between gap-3"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                          <h4 className="text-sm font-semibold text-[#fae8d7]">{agr.title}</h4>
-                          <span className="text-[10px] uppercase font-bold text-[#d94f6f] px-1.5 py-0.5 rounded bg-[#251433]">
-                            {formatAgreementScope(agr.scope)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#b59ebf] leading-relaxed max-w-2xl">{agr.content}</p>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="text-[10px] text-[#8d7596] block">
-                          Agreed on {new Date(agr.createdAt).toLocaleDateString()}
-                        </span>
-                        <span className="text-[10px] text-emerald-400 font-semibold block mt-0.5">
-                          ✓ Signed by both
-                        </span>
-                      </div>
-                    </div>
+                      agreement={agr}
+                      dynamic={selectedDynamic}
+                      users={ALL_USERS}
+                      currentUserId="usr_alex"
+                      onClick={() => setSelectedAgreementForDetail(agr)}
+                    />
                   ))}
                 </div>
               )}
@@ -658,6 +677,36 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Agreement Detail Modal */}
+      {selectedAgreementForDetail && (
+        <AgreementDetailModal
+          agreement={selectedAgreementForDetail}
+          isOpen={!!selectedAgreementForDetail}
+          onClose={() => setSelectedAgreementForDetail(null)}
+          relationships={INITIAL_RELATIONSHIPS}
+          dynamics={dynamics}
+          users={ALL_USERS}
+          currentUserId="usr_alex"
+          onUpdateAgreement={handleUpdateAgreement}
+          onNavigateToDynamic={(dynId) => setSelectedDynamicId(dynId)}
+        />
+      )}
+
+      {/* Agreement Creation Modal */}
+      {isCreateAgreementOpen && (
+        <AgreementCreationModal
+          isOpen={isCreateAgreementOpen}
+          onClose={() => setIsCreateAgreementOpen(false)}
+          relationships={INITIAL_RELATIONSHIPS}
+          dynamics={dynamics}
+          users={ALL_USERS}
+          currentUserId="usr_alex"
+          initialRelationshipId={selectedDynamic?.relationshipId}
+          initialDynamicId={selectedDynamic?.id}
+          onCreateAgreement={handleCreateAgreement}
+        />
       )}
     </div>
   );

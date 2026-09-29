@@ -28,20 +28,24 @@ import {
   INITIAL_CHECKINS,
   INITIAL_SESSIONS,
   INITIAL_RITUALS,
-  CURRENT_USER
+  CURRENT_USER,
+  ALL_USERS
 } from '../../data/domainDemoData';
 import {
   Relationship,
   RelationshipStatus,
   CoreRelationshipStructure,
   CoreConnectionContext,
-  RelationshipParticipant
+  RelationshipParticipant,
+  Agreement,
 } from '../../types/domain';
+import { AgreementCard } from '../agreements/AgreementCard';
+import { AgreementDetailModal } from '../agreements/AgreementDetailModal';
+import { AgreementCreationModal } from '../agreements/AgreementCreationModal';
 import {
   formatRelationshipStructure,
   formatConnectionContext,
   formatConnectionContextsList,
-  formatAgreementScope,
   formatDynamicType,
   formatPracticeStage
 } from '../../types/legacyAdapters';
@@ -93,17 +97,32 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   const [newParticipantName, setNewParticipantName] = useState('');
   const [newParticipantRole, setNewParticipantRole] = useState('');
 
-  // Future Agreements Modal State
-  const [isAgreementsNoticeOpen, setIsAgreementsNoticeOpen] = useState(false);
+  // Agreements State (Phase 4)
+  const [agreements, setAgreements] = useState<Agreement[]>(INITIAL_AGREEMENTS);
+  const [selectedAgreementForDetail, setSelectedAgreementForDetail] = useState<Agreement | null>(null);
+  const [isCreateAgreementOpen, setIsCreateAgreementOpen] = useState(false);
+  const [agreementFilter, setAgreementFilter] = useState<'all' | 'active' | 'negotiating' | 'paused_retired'>('all');
 
   const selectedRelationship = relationships.find(r => r.id === selectedRelId) || relationships[0];
+
+  const handleUpdateAgreement = (updated: Agreement) => {
+    setAgreements(prev => prev.map(a => a.id === updated.id ? updated : a));
+    if (selectedAgreementForDetail?.id === updated.id) {
+      setSelectedAgreementForDetail(updated);
+    }
+  };
+
+  const handleCreateAgreement = (newAgr: Agreement) => {
+    setAgreements(prev => [newAgr, ...prev]);
+    setSelectedAgreementForDetail(newAgr);
+  };
 
   // Derive counts & activity strictly from domain data
   const getRelationshipDynamics = (relId: string) =>
     INITIAL_DYNAMICS.filter(d => d.relationshipId === relId);
 
   const getRelationshipAgreements = (relId: string) =>
-    INITIAL_AGREEMENTS.filter(a => a.relationshipId === relId);
+    agreements.filter(a => a.relationshipId === relId);
 
   const getRelationshipActivity = (relId: string): ActivityEvent[] => {
     const events: ActivityEvent[] = [];
@@ -341,8 +360,16 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   const currentRelDynamics = selectedRelationship ? getRelationshipDynamics(selectedRelationship.id) : [];
   const currentRelAgreements = selectedRelationship ? getRelationshipAgreements(selectedRelationship.id) : [];
   const currentRelActivity = selectedRelationship ? getRelationshipActivity(selectedRelationship.id) : [];
-  const activeAgreementsCount = currentRelAgreements.filter(a => a.status === 'agreed').length;
-  const pendingAgreementsCount = currentRelAgreements.filter(a => a.status === 'pending').length;
+  const activeAgreementsCount = currentRelAgreements.filter(a => a.status === 'active' || a.status === 'agreed').length;
+  const pendingAgreementsCount = currentRelAgreements.filter(a => a.status === 'negotiating' || a.status === 'pending' || a.status === 'pending_approval' || a.status === 'draft').length;
+  const pausedRetiredCount = currentRelAgreements.filter(a => a.status === 'paused' || a.status === 'retired' || a.status === 'declined' || a.status === 'revoked').length;
+
+  const filteredRelAgreements = currentRelAgreements.filter(agr => {
+    if (agreementFilter === 'active') return agr.status === 'active' || agr.status === 'agreed';
+    if (agreementFilter === 'negotiating') return agr.status === 'negotiating' || agr.status === 'pending' || agr.status === 'pending_approval' || agr.status === 'draft';
+    if (agreementFilter === 'paused_retired') return agr.status === 'paused' || agr.status === 'retired' || agr.status === 'declined' || agr.status === 'revoked';
+    return true;
+  });
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">
@@ -772,56 +799,76 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
             )}
           </div>
 
-          {/* Section 3: Shared Agreements & Boundaries */}
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Section 3: Shared Agreements & Boundaries (Phase 4 First-Class Product Area) */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                  <Shield className="w-3.5 h-3.5 text-[#d94f6f]" />
-                  Shared Agreements ({currentRelAgreements.length})
-                </h3>
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-[#d4af37]" />
+                  <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
+                    Agreements &amp; Boundary Compacts ({currentRelAgreements.length})
+                  </h3>
+                </div>
                 <p className="text-xs text-[#b59ebf] mt-0.5">
-                  {activeAgreementsCount} active agreements • {pendingAgreementsCount} pending review
+                  {activeAgreementsCount} active • {pendingAgreementsCount} in negotiation • {pausedRetiredCount} paused/archived
                 </p>
               </div>
 
               <button
-                onClick={() => setIsAgreementsNoticeOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+                type="button"
+                onClick={() => setIsCreateAgreementOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d4af37] text-black hover:bg-[#e6c250] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d4af37]/10 self-start sm:self-center"
               >
-                <span>View agreements</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5" />
+                <span>Propose Agreement</span>
               </button>
             </div>
 
-            {currentRelAgreements.length === 0 ? (
-              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
-                No explicit agreements established for this relationship yet.
+            {/* Filter Tabs */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#251433]">
+              {[
+                { id: 'all', label: `All (${currentRelAgreements.length})` },
+                { id: 'active', label: `Active (${activeAgreementsCount})` },
+                { id: 'negotiating', label: `In Negotiation (${pendingAgreementsCount})` },
+                { id: 'paused_retired', label: `Paused / Retired (${pausedRetiredCount})` },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setAgreementFilter(tab.id as 'all' | 'active' | 'negotiating' | 'paused_retired')}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    agreementFilter === tab.id
+                      ? 'bg-[#d4af37] text-black font-semibold'
+                      : 'bg-[#130b1a] text-[#b59ebf] hover:text-[#fae8d7] border border-[#251433]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {filteredRelAgreements.length === 0 ? (
+              <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                <p className="text-xs text-[#8d7596]">No agreements found under this filter view.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateAgreementOpen(true)}
+                  className="text-xs text-[#d4af37] font-semibold hover:underline"
+                >
+                  Propose an agreement for {selectedRelationship.name}
+                </button>
               </div>
             ) : (
-              <div className="space-y-2.5">
-                {currentRelAgreements.map(agr => (
-                  <div
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filteredRelAgreements.map(agr => (
+                  <AgreementCard
                     key={agr.id}
-                    className="p-3.5 rounded-xl bg-[#130b1a] border border-[#251433] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <h4 className="text-xs font-semibold text-[#fae8d7]">{agr.title}</h4>
-                      </div>
-                      <p className="text-[11px] text-[#b59ebf] mt-1 max-w-xl">{agr.content}</p>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-                      <span className="text-[10px] font-semibold text-[#d94f6f] px-2 py-0.5 rounded bg-[#251433]">
-                        {formatAgreementScope(agr.scope)}
-                      </span>
-                      <span className="text-[10px] font-medium text-emerald-400 px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/30 capitalize">
-                        {agr.status}
-                      </span>
-                    </div>
-                  </div>
+                    agreement={agr}
+                    dynamic={INITIAL_DYNAMICS.find(d => d.id === agr.dynamicId)}
+                    users={ALL_USERS}
+                    currentUserId="usr_alex"
+                    onClick={() => setSelectedAgreementForDetail(agr)}
+                  />
                 ))}
               </div>
             )}
@@ -1360,40 +1407,39 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
         </div>
       )}
 
-      {/* Phase 4 Agreements Notice Modal */}
-      {isAgreementsNoticeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-[#170c20] border border-[#251433] p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-[#251433] text-[#d94f6f]">
-                <Shield className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-[#fae8d7]">Agreements &amp; Boundary Management</h3>
-                <span className="text-[10px] text-[#d94f6f] font-semibold uppercase tracking-wider">
-                  Upcoming in Phase 4
-                </span>
-              </div>
-            </div>
+      {/* Agreement Detail Modal */}
+      {selectedAgreementForDetail && (
+        <AgreementDetailModal
+          agreement={selectedAgreementForDetail}
+          isOpen={!!selectedAgreementForDetail}
+          onClose={() => setSelectedAgreementForDetail(null)}
+          relationships={relationships}
+          dynamics={INITIAL_DYNAMICS}
+          users={ALL_USERS}
+          currentUserId="usr_alex"
+          onUpdateAgreement={handleUpdateAgreement}
+          onNavigateToDynamic={(dynId) => {
+            if (onNavigateDynamic) onNavigateDynamic(dynId);
+          }}
+          onNavigateToRelationship={(relId) => {
+            setSelectedRelId(relId);
+            setViewMode('detail');
+          }}
+        />
+      )}
 
-            <p className="text-xs text-[#b59ebf] leading-relaxed">
-              Granular agreement proposal, bilateral negotiation, and boundary revision workflows will be introduced in <strong>Phase 4 — Agreements &amp; Boundaries</strong>.
-            </p>
-
-            <p className="text-xs text-[#8d7596] leading-relaxed">
-              Your current relationship agreements are safely preserved in privacy-aware local storage and displayed here in read-only format.
-            </p>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => setIsAgreementsNoticeOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] transition-colors"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Agreement Creation Modal */}
+      {isCreateAgreementOpen && (
+        <AgreementCreationModal
+          isOpen={isCreateAgreementOpen}
+          onClose={() => setIsCreateAgreementOpen(false)}
+          relationships={relationships}
+          dynamics={INITIAL_DYNAMICS}
+          users={ALL_USERS}
+          currentUserId="usr_alex"
+          initialRelationshipId={selectedRelationship?.id}
+          onCreateAgreement={handleCreateAgreement}
+        />
       )}
     </div>
   );

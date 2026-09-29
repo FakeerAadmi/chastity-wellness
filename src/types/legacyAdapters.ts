@@ -2,7 +2,10 @@ import {
   PermissionRequest,
   Relationship,
   AgreementScope,
-  DynamicPracticeStage
+  DynamicPracticeStage,
+  ConsentStatus,
+  NegotiationResponse,
+  AgreementSectionCategory,
 } from './domain';
 
 /**
@@ -214,3 +217,159 @@ export function formatDynamicType(type?: string): string {
       return type ? type.replace(/_/g, ' ') : 'Dynamic';
   }
 }
+
+/**
+ * Format consent status with visual style tokens.
+ */
+export function formatConsentStatus(status: ConsentStatus): {
+  label: string;
+  badgeClass: string;
+  textClass: string;
+} {
+  switch (status) {
+    case 'active':
+    case 'agreed':
+      return {
+        label: 'Active Agreement',
+        badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        textClass: 'text-emerald-400',
+      };
+    case 'negotiating':
+    case 'pending':
+      return {
+        label: 'In Negotiation',
+        badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+        textClass: 'text-amber-300',
+      };
+    case 'pending_approval':
+      return {
+        label: 'Pending Mutual Approval',
+        badgeClass: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+        textClass: 'text-purple-300',
+      };
+    case 'draft':
+      return {
+        label: 'Draft Proposal',
+        badgeClass: 'bg-neutral-800 text-neutral-300 border-neutral-700',
+        textClass: 'text-neutral-400',
+      };
+    case 'paused':
+      return {
+        label: 'Paused',
+        badgeClass: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
+        textClass: 'text-yellow-300',
+      };
+    case 'retired':
+      return {
+        label: 'Retired / Archived',
+        badgeClass: 'bg-stone-800 text-stone-400 border-stone-700',
+        textClass: 'text-stone-400',
+      };
+    case 'declined':
+      return {
+        label: 'Declined',
+        badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+        textClass: 'text-rose-300',
+      };
+    case 'revoked':
+      return {
+        label: 'Revoked',
+        badgeClass: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
+        textClass: 'text-rose-400',
+      };
+    case 'expired':
+      return {
+        label: 'Expired',
+        badgeClass: 'bg-neutral-800 text-neutral-400 border-neutral-700',
+        textClass: 'text-neutral-400',
+      };
+    default:
+      return {
+        label: status,
+        badgeClass: 'bg-neutral-800 text-neutral-300 border-neutral-700',
+        textClass: 'text-neutral-300',
+      };
+  }
+}
+
+/**
+ * Format participant negotiation response.
+ */
+export function formatNegotiationResponse(response: NegotiationResponse): {
+  label: string;
+  badgeClass: string;
+} {
+  switch (response) {
+    case 'approved':
+    case 'definitely_interested':
+      return {
+        label: 'Approved',
+        badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+      };
+    case 'interested':
+      return {
+        label: 'Consenting / Interested',
+        badgeClass: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+      };
+    case 'changes_requested':
+      return {
+        label: 'Changes Requested',
+        badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      };
+    case 'maybe':
+    case 'unsure':
+    case 'pending':
+      return {
+        label: 'Awaiting Response',
+        badgeClass: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+      };
+    case 'declined':
+    case 'not_interested':
+      return {
+        label: 'Declined',
+        badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+      };
+    case 'hard_boundary':
+      return {
+        label: 'Hard Boundary',
+        badgeClass: 'bg-rose-600/20 text-rose-400 border-rose-500/40',
+      };
+    default:
+      return {
+        label: response,
+        badgeClass: 'bg-neutral-800 text-neutral-300 border-neutral-700',
+      };
+  }
+}
+
+/**
+ * Format Agreement Section Category.
+ */
+export function formatSectionCategory(category?: AgreementSectionCategory): string {
+  switch (category) {
+    case 'intent':
+      return 'Intent & Purpose';
+    case 'boundaries':
+      return 'Boundaries & Limits';
+    case 'permissions':
+      return 'Permissions & Authority';
+    case 'expectations':
+      return 'Expectations & Cadence';
+    case 'safewords':
+      return 'Safewords & Stop Conditions';
+    case 'safety':
+      return 'Safety & Physical Integrity';
+    case 'communication':
+      return 'Communication & Transparency';
+    case 'aftercare':
+      return 'Aftercare & Reconnection';
+    case 'exceptions':
+      return 'Emergency Exceptions';
+    case 'review':
+      return 'Review & Renegotiation Date';
+    case 'custom':
+    default:
+      return 'Custom Section';
+  }
+}
+

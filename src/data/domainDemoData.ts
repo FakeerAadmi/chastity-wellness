@@ -108,6 +108,15 @@ export const PARTNER_TAYLOR: User = {
   createdAt: '2026-02-15T12:00:00Z',
 };
 
+export const ALL_USERS: User[] = [
+  CURRENT_USER,
+  PARTNER_SAM,
+  PARTNER_JORDAN,
+  PARTNER_MORGAN,
+  PARTNER_RILEY,
+  PARTNER_TAYLOR,
+];
+
 /**
  * Example relationships illustrating distinct structures and connection contexts.
  * NOTE: These demonstrate schema flexibility and are not rigid defaults.
@@ -414,6 +423,501 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
  * Strict Agreements keeping scopes, negotiation responses, and consent status separate.
  */
 export const INITIAL_AGREEMENTS: Agreement[] = [
+  // 1. Active Chastity Agreement
+  {
+    id: 'agr_chastity_rules_checkins',
+    relationshipId: 'rel_alex_sam',
+    dynamicId: 'dyn_chastity_wellness',
+    title: 'Chastity Rules, Wear Schedule & Inspection Compact',
+    scope: 'rule',
+    content: 'Comprehensive agreement establishing wear windows, inspection routines, safety protocols, and orgasm control authority between Alex and Sam.',
+    status: 'active',
+    effectiveFrom: '2026-01-20T12:00:00Z',
+    reviewDate: '2026-11-01T00:00:00Z',
+    sections: [
+      {
+        id: 'sec_chastity_intent',
+        category: 'intent',
+        title: 'Intent & Erotic Surrender',
+        content: 'To foster erotic anticipation, heightened discipline, mutual vulnerability, and physical surrender, anchored in uncompromising physical safety and wellness.',
+        order: 1,
+      },
+      {
+        id: 'sec_chastity_boundaries',
+        category: 'boundaries',
+        title: 'Wear Windows & Hard Limits',
+        content: 'Maximum continuous wear window is 72 hours without a 4-hour skin recovery break. Any persistent erythema, numbness, pinching, or sleep disturbance requires instant device removal.',
+        order: 2,
+      },
+      {
+        id: 'sec_chastity_permissions',
+        category: 'permissions',
+        title: 'Keyholding & Orgasm Authority',
+        content: 'Sam holds the primary physical and digital keys and determines release dates and orgasm frequency. Alex yields erotic orgasm control but retains full authority for medical and hygiene release.',
+        order: 3,
+      },
+      {
+        id: 'sec_chastity_safewords',
+        category: 'safewords',
+        title: 'Zero-Penalty Safeword Protocol',
+        content: 'The safeword "Red" or opening the emergency key vault triggers immediate, unquestioned unlocking within 2 minutes. Safeword invocation incurs zero guilt, punishment, or relationship penalty.',
+        order: 4,
+      },
+      {
+        id: 'sec_chastity_safety',
+        category: 'safety',
+        title: 'Daily Hygiene & Inspection Protocol',
+        content: 'Mandatory daily device inspection and wash. Alex must verify skin integrity with Sam or provide timestamped photos if remote. Medical-grade silicone or titanium cages only.',
+        order: 5,
+      },
+      {
+        id: 'sec_chastity_communication',
+        category: 'communication',
+        title: 'Check-in Cadence & Aftercare',
+        content: '10 minutes of dedicated debrief and affectionate physical connection following any locking, unlocking, or release session to ensure emotional grounding.',
+        order: 6,
+      },
+      {
+        id: 'sec_chastity_review',
+        category: 'review',
+        title: 'Monthly Review Cadence',
+        content: 'Formal review on the 1st of each calendar month to adjust ring sizes, wear duration, and emotional comfort.',
+        order: 7,
+      },
+    ],
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'approved',
+        note: 'Consented willingly. Excited for structured inspections.',
+        respondedAt: '2026-01-20T11:00:00Z',
+      },
+      {
+        participantId: 'usr_sam',
+        response: 'approved',
+        note: 'Fully aligned. Safety and hygiene are top priority.',
+        respondedAt: '2026-01-20T11:30:00Z',
+      },
+    ],
+    revisionHistory: [
+      {
+        revisionId: 'rev_chastity_v1',
+        version: 1,
+        summary: 'Initial agreement drafted and approved after 7-day trial.',
+        revisedAt: '2026-01-20T12:00:00Z',
+        revisedBy: 'usr_sam',
+        text: 'Initial wear parameters and safeword guarantee.',
+      },
+      {
+        revisionId: 'rev_chastity_v2',
+        version: 2,
+        summary: 'Clarified 72h max continuous wear limit and mandatory 4-hour skin recovery break.',
+        revisedAt: '2026-08-15T10:00:00Z',
+        revisedBy: 'usr_alex',
+        reason: 'Prevent potential pressure sores during hot summer months.',
+      },
+    ],
+    createdAt: '2026-01-20T10:00:00Z',
+    updatedAt: '2026-08-15T10:00:00Z',
+  },
+
+  // 2. Negotiating Cuckold / Hotwife Agreement (Alex & Taylor)
+  {
+    id: 'agr_cuckold_outside_play',
+    relationshipId: 'rel_alex_taylor',
+    dynamicId: 'dyn_cuckold_hotwife',
+    title: 'Outside Play, Disclosure & Reconnection Protocol',
+    scope: 'agreement',
+    content: 'Protocols governing outside romantic/erotic dating, notice requirements, safer sex practices, and mandatory reconnection rituals between Alex and Taylor.',
+    status: 'negotiating',
+    sections: [
+      {
+        id: 'sec_cuckold_intent',
+        category: 'intent',
+        title: 'Intent & Primary Bond Primacy',
+        content: 'Consensual exploration of outside erotic partners for Taylor, compersion, heightened erotic arousal, and sexual fulfillment while upholding Alex & Taylor as primary, unassailable partners.',
+        order: 1,
+      },
+      {
+        id: 'sec_cuckold_notice',
+        category: 'communication',
+        title: 'Advance Notice & Calendar Transparency',
+        content: 'Taylor provides minimum 24 hours advance notice before scheduling an external date. Dates are logged on the shared private calendar with venue details.',
+        order: 2,
+      },
+      {
+        id: 'sec_cuckold_safety',
+        category: 'safety',
+        title: 'Safer Sex & Barrier Protection',
+        content: 'Strict barrier protection (condoms/dental dams) mandatory for all genital and oral contact with external partners. Comprehensive STI screening every 90 days with results shared openly.',
+        order: 3,
+      },
+      {
+        id: 'sec_cuckold_boundaries',
+        category: 'boundaries',
+        title: 'Privacy & Discretion Limits',
+        content: 'No external dates with mutual friends, colleagues, or ex-partners. Primary home is strictly off-limits to external partners.',
+        order: 4,
+      },
+      {
+        id: 'sec_cuckold_safewords',
+        category: 'safewords',
+        title: 'Emotional Ceasefire & Pause Protocol',
+        content: 'Either partner can invoke a 14-day "Hold" without penalty if feelings of anxiety, jealousy, or insecurity become dysregulating. External dating halts while reconnection is prioritized.',
+        order: 5,
+      },
+      {
+        id: 'sec_cuckold_aftercare',
+        category: 'aftercare',
+        title: 'Reconnection Ritual & Aftercare',
+        content: 'Mandatory 60 minutes of uninterrupted reconnection, physical touch, and non-defensive debriefing within 24 hours of returning from an external encounter.',
+        order: 6,
+      },
+      {
+        id: 'sec_cuckold_review',
+        category: 'review',
+        title: 'Renegotiation Cadence',
+        content: 'Review terms after every 3 external dates or every 60 days, whichever comes first.',
+        order: 7,
+      },
+    ],
+    participantResponses: [
+      {
+        participantId: 'usr_taylor',
+        response: 'approved',
+        note: 'I appreciate the clear guidelines around notice and safer sex. Fully supportive.',
+        respondedAt: '2026-09-28T14:00:00Z',
+      },
+      {
+        participantId: 'usr_alex',
+        response: 'changes_requested',
+        note: 'Can we explicitly clarify that overnight stays require a separate prior check-in each time rather than being automatic under the 24h notice rule?',
+        respondedAt: '2026-09-29T10:15:00Z',
+      },
+    ],
+    revisionHistory: [
+      {
+        revisionId: 'rev_cuckold_v1',
+        version: 1,
+        summary: 'Initial draft proposed by Taylor and Alex during dinner discussion.',
+        revisedAt: '2026-09-28T12:00:00Z',
+        revisedBy: 'usr_taylor',
+        text: 'Initial outside play protocol draft.',
+      },
+    ],
+    createdAt: '2026-09-28T12:00:00Z',
+    updatedAt: '2026-09-29T10:15:00Z',
+  },
+
+  // 3. Active BDSM / D/s Agreement (Alex & Sam)
+  {
+    id: 'agr_weekend_power_exchange',
+    relationshipId: 'rel_alex_sam',
+    dynamicId: 'dyn_weekend_power_exchange',
+    title: 'Weekend D/s Protocol & Authority Compact',
+    scope: 'rule',
+    content: 'Structured consensual Dominance & Submission compact governing roles, etiquette, safewords, and scene authority from Friday evening to Sunday night.',
+    status: 'active',
+    effectiveFrom: '2026-02-16T18:00:00Z',
+    reviewDate: '2026-11-15T00:00:00Z',
+    sections: [
+      {
+        id: 'sec_bdsm_intent',
+        category: 'intent',
+        title: 'Intent & Power Exchange Scope',
+        content: 'Consensual power exchange in effect each weekend from Friday 18:00 through Sunday 21:00. Sam holds domestic and erotic leadership; Alex practices active submission and service.',
+        order: 1,
+      },
+      {
+        id: 'sec_bdsm_protocol',
+        category: 'permissions',
+        title: 'Daily Protocols & Etiquette',
+        content: 'Alex serves morning coffee and breakfast following Sam\'s preferred preparation. Formal forms of address used during designated scenes. Sam directs leisure activities and meal choices.',
+        order: 2,
+      },
+      {
+        id: 'sec_bdsm_safewords',
+        category: 'safewords',
+        title: 'Traffic Light Safewords & Hard Limits',
+        content: 'Full Traffic Light Protocol (Green / Yellow / Red). "Red" immediately suspends all authority and scene rules, reverting to egalitarian partners. Hard limits: no public scenes, no marks that interfere with professional clothing, no sleep deprivation.',
+        order: 3,
+      },
+      {
+        id: 'sec_bdsm_safety',
+        category: 'safety',
+        title: 'Physical Safety & Ergonomics',
+        content: 'Mandatory hydration check every 2 hours during physical scenes. Proper nerve monitoring during any restraint play. Safety shears within arm\'s reach at all times.',
+        order: 4,
+      },
+      {
+        id: 'sec_bdsm_aftercare',
+        category: 'aftercare',
+        title: 'Sunday Evening Aftercare & Re-entry',
+        content: 'Dedicated 45-minute re-entry ritual on Sunday at 20:00 with warm tea, heavy blankets, validation, and emotional debrief before transitioning to weekday work routines.',
+        order: 5,
+      },
+      {
+        id: 'sec_bdsm_review',
+        category: 'review',
+        title: 'Quarterly Review Schedule',
+        content: 'Quarterly sit-down discussion over dinner outside the house to review limits, scene interests, and emotional satisfaction.',
+        order: 6,
+      },
+    ],
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'approved',
+        note: 'Eager for the structure and aftercare commitment.',
+        respondedAt: '2026-02-16T12:00:00Z',
+      },
+      {
+        participantId: 'usr_sam',
+        response: 'approved',
+        note: 'Excited to hold space with mindfulness and care.',
+        respondedAt: '2026-02-16T12:00:00Z',
+      },
+    ],
+    revisionHistory: [
+      {
+        revisionId: 'rev_bdsm_v1',
+        version: 1,
+        summary: 'Adopted initial weekend power exchange compact.',
+        revisedAt: '2026-02-16T12:00:00Z',
+        revisedBy: 'usr_sam',
+      },
+    ],
+    createdAt: '2026-02-15T15:00:00Z',
+    updatedAt: '2026-02-16T12:00:00Z',
+  },
+
+  // 4. Ordinary Long Distance Relationship Agreement (Alex & Jordan)
+  {
+    id: 'agr_ld_asynch_communication',
+    relationshipId: 'rel_alex_jordan',
+    dynamicId: 'dyn_asynch_reflection',
+    title: 'Asynchronous Communication & Virtual Date Agreement',
+    scope: 'agreement',
+    content: 'Cadence and expectations for maintaining connection across 3 time zones without digital fatigue or pressure.',
+    status: 'active',
+    effectiveFrom: '2026-02-12T14:00:00Z',
+    reviewDate: '2026-11-20T00:00:00Z',
+    sections: [
+      {
+        id: 'sec_ld_intent',
+        category: 'intent',
+        title: 'Intent & Emotional Nourishment',
+        content: 'Maintaining deep emotional intimacy, shared reflection, and ongoing romantic presence despite geographical separation.',
+        order: 1,
+      },
+      {
+        id: 'sec_ld_cadence',
+        category: 'communication',
+        title: 'Touchpoint Cadence & Timezone Respect',
+        content: 'Exchange at least one thoughtful voice memo or written reflection on Tuesdays, Thursdays, and Sundays. No expectation of immediate replies during work hours.',
+        order: 2,
+      },
+      {
+        id: 'sec_ld_virtual_date',
+        category: 'expectations',
+        title: 'Weekly Protected Virtual Date',
+        content: 'Sunday 90-minute video date with shared meal or evening tea. Laptops closed to work emails; dedicated attention guaranteed.',
+        order: 3,
+      },
+      {
+        id: 'sec_ld_transparency',
+        category: 'safewords',
+        title: 'Vulnerability & "Amber" Check-in',
+        content: 'If either partner feels disconnected or anxious, sending "Amber" prompts a 15-minute supportive call within 24 hours without defensiveness.',
+        order: 4,
+      },
+      {
+        id: 'sec_ld_review',
+        category: 'review',
+        title: 'Review Upon In-Person Travel',
+        content: 'Review and update whenever travel schedules change or next in-person visit is booked.',
+        order: 5,
+      },
+    ],
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'approved',
+        respondedAt: '2026-02-12T14:00:00Z',
+      },
+      {
+        participantId: 'usr_jordan',
+        response: 'approved',
+        respondedAt: '2026-02-12T14:00:00Z',
+      },
+    ],
+    revisionHistory: [
+      {
+        revisionId: 'rev_ld_v1',
+        version: 1,
+        summary: 'Agreement established when Jordan relocated for project.',
+        revisedAt: '2026-02-12T14:00:00Z',
+        revisedBy: 'usr_jordan',
+      },
+    ],
+    createdAt: '2026-02-10T12:00:00Z',
+    updatedAt: '2026-02-12T14:00:00Z',
+  },
+
+  // 5. Multi-person Agreement with One Participant Requesting Changes (Alex, Morgan & Riley)
+  {
+    id: 'agr_triad_calendar_boundaries',
+    relationshipId: 'rel_triad',
+    dynamicId: 'dyn_triad_harmony',
+    title: 'Household Resource, Scheduling & Sanctuary Space Agreement',
+    scope: 'agreement',
+    content: 'Communal triad rules balancing collective shared time with individual dyad intimacy and solo sanctuary time.',
+    status: 'negotiating',
+    sections: [
+      {
+        id: 'sec_triad_intent',
+        category: 'intent',
+        title: 'Intent & Triad Balance',
+        content: 'Fostering an equitable, nurturing triad where Alex, Morgan, and Riley each feel respected, with balanced communal, dyadic, and solo autonomy.',
+        order: 1,
+      },
+      {
+        id: 'sec_triad_calendar',
+        category: 'expectations',
+        title: 'Communal Calendar & Advance Notice',
+        content: 'All shared triad dinners, group events, or outside guests must be logged into the communal calendar at least 48 hours in advance.',
+        order: 2,
+      },
+      {
+        id: 'sec_triad_sanctuary',
+        category: 'boundaries',
+        title: 'Sanctuary Space & Solo Evenings',
+        content: 'Each member is guaranteed two protected solo evenings per week with the private den kept quiet and free of group socializing.',
+        order: 3,
+      },
+      {
+        id: 'sec_triad_conflict',
+        category: 'communication',
+        title: 'Conflict Resolution & Round-Robin Debriefs',
+        content: 'If tension arises between any two members or all three, a 30-minute structured check-in is scheduled within 24 hours using round-robin timed speaking.',
+        order: 4,
+      },
+      {
+        id: 'sec_triad_review',
+        category: 'review',
+        title: 'Monthly Triad Family Meeting',
+        content: 'First Sunday of each month dedicated to a household brunch to review chore equity, emotional intimacy, and calendar comfort.',
+        order: 5,
+      },
+    ],
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'approved',
+        note: 'Looks great to me, fully support the 48-hour guest notice.',
+        respondedAt: '2026-03-12T16:00:00Z',
+      },
+      {
+        participantId: 'usr_morgan',
+        response: 'approved',
+        note: 'Happy with this structure.',
+        respondedAt: '2026-03-12T16:30:00Z',
+      },
+      {
+        participantId: 'usr_riley',
+        response: 'changes_requested',
+        note: 'I need Thursday evenings reserved permanently for my private ceramics studio time — no dinner hosting or shared triad events on Thursdays.',
+        respondedAt: '2026-03-13T09:15:00Z',
+      },
+    ],
+    revisionHistory: [
+      {
+        revisionId: 'rev_triad_v1',
+        version: 1,
+        summary: 'Initial triad charter proposed by Alex and Morgan.',
+        revisedAt: '2026-03-12T16:00:00Z',
+        revisedBy: 'usr_alex',
+      },
+    ],
+    createdAt: '2026-03-12T16:00:00Z',
+    updatedAt: '2026-03-13T09:15:00Z',
+  },
+
+  // 6. Retired Agreement Showing Revision History (Alex & Sam)
+  {
+    id: 'agr_chastity_v1_retired',
+    relationshipId: 'rel_alex_sam',
+    dynamicId: 'dyn_chastity_wellness',
+    title: 'v1 Initial 7-Day Chastity Trial Compact (Retired)',
+    scope: 'agreement',
+    content: 'Initial experimental trial compact used to test anatomical comfort, sizing, and mutual emotional willingness prior to establishing long-term protocols.',
+    status: 'retired',
+    effectiveFrom: '2026-01-18T10:00:00Z',
+    expiresAt: '2026-01-25T10:00:00Z',
+    sections: [
+      {
+        id: 'sec_retired_intent',
+        category: 'intent',
+        title: 'Trial Purpose',
+        content: '7-day limited trial to test cage comfort, ergonomics, and daily routine fit without long-term commitments.',
+        order: 1,
+      },
+      {
+        id: 'sec_retired_boundaries',
+        category: 'boundaries',
+        title: 'Trial Limits',
+        content: 'Maximum wear window 12 hours per day; device must be removed prior to sleep every night.',
+        order: 2,
+      },
+      {
+        id: 'sec_retired_safewords',
+        category: 'safewords',
+        title: 'Instant Release on Request',
+        content: 'Any verbal request or discomfort prompts immediate removal.',
+        order: 3,
+      },
+      {
+        id: 'sec_retired_status',
+        category: 'review',
+        title: 'Retirement & Superseded Status',
+        content: 'Trial completed successfully on 2026-01-25. Superseded by active long-term agreement "Chastity Rules, Wear Schedule & Inspection Compact".',
+        order: 4,
+      },
+    ],
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'approved',
+        respondedAt: '2026-01-18T10:00:00Z',
+      },
+      {
+        participantId: 'usr_sam',
+        response: 'approved',
+        respondedAt: '2026-01-18T10:00:00Z',
+      },
+    ],
+    revisionHistory: [
+      {
+        revisionId: 'rev_trial_v1',
+        version: 1,
+        summary: 'Initial draft for 7-day exploratory trial.',
+        revisedAt: '2026-01-18T10:00:00Z',
+        revisedBy: 'usr_alex',
+      },
+      {
+        revisionId: 'rev_trial_v2',
+        version: 2,
+        summary: 'Trial concluded successfully. Compact archived and superseded by v2 permanent agreement.',
+        revisedAt: '2026-01-25T10:00:00Z',
+        revisedBy: 'usr_sam',
+        reason: 'Superseded by agr_chastity_rules_checkins',
+      },
+    ],
+    createdAt: '2026-01-18T10:00:00Z',
+    updatedAt: '2026-01-25T10:00:00Z',
+  },
+
+  // Retain legacy IDs for backward compatibility
   {
     id: 'agr_daily_hygiene',
     relationshipId: 'rel_alex_sam',
@@ -421,29 +925,31 @@ export const INITIAL_AGREEMENTS: Agreement[] = [
     title: 'Daily Hygiene & Device Inspection',
     scope: 'boundary',
     content: 'Physical inspection and cleaning must occur at least once every 24 hours. The wear session is paused immediately if any skin erythema or pinching occurs.',
+    status: 'active',
     participantResponses: [
       {
         participantId: 'usr_alex',
-        response: 'definitely_interested',
+        response: 'approved',
         respondedAt: '2026-01-20T11:00:00Z',
       },
       {
         participantId: 'usr_sam',
-        response: 'definitely_interested',
+        response: 'approved',
         respondedAt: '2026-01-20T11:00:00Z',
       },
     ],
-    status: 'agreed',
     revisionHistory: [
       {
         revisionId: 'rev_1',
-        text: 'Initial hygiene requirement',
+        version: 1,
+        summary: 'Initial hygiene requirement',
         revisedAt: '2026-01-18T10:00:00Z',
         revisedBy: 'usr_sam',
       },
       {
         revisionId: 'rev_2',
-        text: 'Added mandatory immediate pause condition on skin erythema',
+        version: 2,
+        summary: 'Added mandatory immediate pause condition on skin erythema',
         revisedAt: '2026-08-15T10:00:00Z',
         revisedBy: 'usr_alex',
       },
@@ -458,154 +964,22 @@ export const INITIAL_AGREEMENTS: Agreement[] = [
     title: 'Zero-Penalty Safeword Protocol',
     scope: 'rule',
     content: 'Calling "Red" or using the physical key vault incurs absolutely no guilt, shame, or relationship penalty. Safety and bodily integrity remain unconditionally paramount.',
+    status: 'active',
     participantResponses: [
       {
         participantId: 'usr_alex',
-        response: 'definitely_interested',
+        response: 'approved',
         respondedAt: '2026-01-19T09:00:00Z',
       },
       {
         participantId: 'usr_sam',
-        response: 'definitely_interested',
+        response: 'approved',
         respondedAt: '2026-01-19T09:00:00Z',
       },
     ],
-    status: 'agreed',
-    revisionHistory: [
-      {
-        revisionId: 'rev_1',
-        text: 'Initial safeword agreement',
-        revisedAt: '2026-01-18T10:00:00Z',
-        revisedBy: 'usr_alex',
-      },
-    ],
+    revisionHistory: [],
     createdAt: '2026-01-18T10:00:00Z',
     updatedAt: '2026-01-19T09:00:00Z',
-  },
-  {
-    id: 'agr_weekend_curfew',
-    relationshipId: 'rel_alex_sam',
-    dynamicId: 'dyn_weekend_power_exchange',
-    title: 'Evening Digital Curfew & Ritual',
-    scope: 'agreement',
-    content: 'Phones down at 22:00 on Friday & Saturday for 30 minutes of intentional dialogue and physical touch.',
-    participantResponses: [
-      {
-        participantId: 'usr_alex',
-        response: 'interested',
-        respondedAt: '2026-02-16T12:00:00Z',
-      },
-      {
-        participantId: 'usr_sam',
-        response: 'definitely_interested',
-        respondedAt: '2026-02-16T12:00:00Z',
-      },
-    ],
-    status: 'agreed',
-    revisionHistory: [],
-    createdAt: '2026-02-15T15:00:00Z',
-    updatedAt: '2026-02-16T12:00:00Z',
-  },
-  {
-    id: 'agr_asynch_checkin_window',
-    relationshipId: 'rel_alex_jordan',
-    dynamicId: 'dyn_asynch_reflection',
-    title: 'Three Asynchronous Touchpoints per Week',
-    scope: 'agreement',
-    content: 'Sharing at least one reflective voice memo or written prompt answer on Tuesday, Thursday, and Sunday.',
-    participantResponses: [
-      {
-        participantId: 'usr_alex',
-        response: 'interested',
-        respondedAt: '2026-02-12T14:00:00Z',
-      },
-      {
-        participantId: 'usr_jordan',
-        response: 'definitely_interested',
-        respondedAt: '2026-02-12T14:00:00Z',
-      },
-    ],
-    status: 'agreed',
-    revisionHistory: [],
-    createdAt: '2026-02-10T12:00:00Z',
-    updatedAt: '2026-02-12T14:00:00Z',
-  },
-  {
-    id: 'agr_triad_household_calendar',
-    relationshipId: 'rel_triad',
-    dynamicId: 'dyn_triad_harmony',
-    title: 'Shared Household Scheduling & Space Transparency',
-    scope: 'agreement',
-    content: 'All three participants log shared dinner commitments and quiet workspace hours in the communal calendar at least 48 hours in advance.',
-    participantResponses: [
-      {
-        participantId: 'usr_alex',
-        response: 'definitely_interested',
-        respondedAt: '2026-03-12T16:00:00Z',
-      },
-      {
-        participantId: 'usr_morgan',
-        response: 'definitely_interested',
-        respondedAt: '2026-03-12T16:00:00Z',
-      },
-      {
-        participantId: 'usr_riley',
-        response: 'definitely_interested',
-        respondedAt: '2026-03-12T16:00:00Z',
-      },
-    ],
-    status: 'agreed',
-    revisionHistory: [],
-    createdAt: '2026-03-12T16:00:00Z',
-    updatedAt: '2026-03-12T16:00:00Z',
-  },
-  {
-    id: 'agr_cuckold_notification',
-    relationshipId: 'rel_alex_taylor',
-    dynamicId: 'dyn_cuckold_hotwife',
-    title: 'Transparent Prior Notification & Barrier Protection',
-    scope: 'boundary',
-    content: 'Full disclosure and alignment prior to external dates, barrier protection required for all intimate encounters, and agreed check-in times established in advance.',
-    participantResponses: [
-      {
-        participantId: 'usr_alex',
-        response: 'definitely_interested',
-        respondedAt: '2026-02-21T10:00:00Z',
-      },
-      {
-        participantId: 'usr_taylor',
-        response: 'definitely_interested',
-        respondedAt: '2026-02-21T10:00:00Z',
-      },
-    ],
-    status: 'agreed',
-    revisionHistory: [],
-    createdAt: '2026-02-20T14:00:00Z',
-    updatedAt: '2026-02-21T10:00:00Z',
-  },
-  {
-    id: 'agr_cuckold_aftercare',
-    relationshipId: 'rel_alex_taylor',
-    dynamicId: 'dyn_cuckold_hotwife',
-    title: 'Intentional Reconnection & Emotional Grounding',
-    scope: 'agreement',
-    content: 'Dedicated 60-minute quiet reconnection, shared physical affection, and non-judgmental emotional debrief within 24 hours of any external encounter.',
-    participantResponses: [
-      {
-        participantId: 'usr_alex',
-        response: 'definitely_interested',
-        respondedAt: '2026-02-21T10:00:00Z',
-      },
-      {
-        participantId: 'usr_taylor',
-        response: 'definitely_interested',
-        respondedAt: '2026-02-21T10:00:00Z',
-      },
-    ],
-    status: 'agreed',
-    revisionHistory: [],
-    createdAt: '2026-02-20T14:00:00Z',
-    updatedAt: '2026-02-21T10:00:00Z',
   },
 ];
 
