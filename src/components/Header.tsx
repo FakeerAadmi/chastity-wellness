@@ -38,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'boundaries', label: 'Boundary Matrix', icon: FileSpreadsheet },
     { id: 'guides', label: 'Guides & Sizing', icon: BookOpen },
     { id: 'community', label: 'Peer Sanctuary', icon: MessageSquare },
+    { id: 'profile', label: 'My Dossier & Profile', icon: User },
   ];
 
   return (

@@ -9,6 +9,7 @@ import { RitualsTab } from '@/components/tabs/RitualsTab';
 import { BoundariesTab } from '@/components/tabs/BoundariesTab';
 import { KnowledgeTab } from '@/components/tabs/KnowledgeTab';
 import { CommunitySection } from '@/components/CommunitySection';
+import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { EmergencyModal } from '@/components/EmergencyModal';
 import { Footer } from '@/components/Footer';
 
@@ -82,6 +83,8 @@ export default function Home() {
             {activeTab === 'guides' && <KnowledgeTab />}
 
             {activeTab === 'community' && <CommunitySection />}
+
+            {activeTab === 'profile' && <ProfileTab />}
           </main>
 
           {/* Footer */}
