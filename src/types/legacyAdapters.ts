@@ -6,6 +6,11 @@ import {
   ConsentStatus,
   NegotiationResponse,
   AgreementSectionCategory,
+  SessionStatus,
+  SessionType,
+  ParticipantReadiness,
+  RitualStatus,
+  RitualRecurrence,
 } from './domain';
 
 /**
@@ -372,4 +377,162 @@ export function formatSectionCategory(category?: AgreementSectionCategory): stri
       return 'Custom Section';
   }
 }
+
+/**
+ * Format Session Type.
+ */
+export function formatSessionType(type?: SessionType): string {
+  switch (type) {
+    case 'dynamic_practice':
+      return 'Dynamic Practice';
+    case 'ritual':
+      return 'Ritual';
+    case 'check_in':
+      return 'Check-in';
+    case 'date_connection':
+      return 'Date / Connection';
+    case 'aftercare':
+      return 'Aftercare';
+    case 'custom':
+    default:
+      return 'Session';
+  }
+}
+
+/**
+ * Format Session Status with visual styling tokens.
+ */
+export function formatSessionStatus(status: SessionStatus): {
+  label: string;
+  badgeClass: string;
+  dotClass: string;
+} {
+  switch (status) {
+    case 'active':
+      return {
+        label: 'Active Scene / Session',
+        badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+        dotClass: 'bg-emerald-400 animate-pulse',
+      };
+    case 'planned':
+      return {
+        label: 'Planned',
+        badgeClass: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+        dotClass: 'bg-sky-400',
+      };
+    case 'paused':
+      return {
+        label: 'Paused',
+        badgeClass: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
+        dotClass: 'bg-yellow-400',
+      };
+    case 'completed':
+      return {
+        label: 'Completed',
+        badgeClass: 'bg-stone-800 text-stone-300 border-stone-700',
+        dotClass: 'bg-stone-400',
+      };
+    case 'cancelled':
+      return {
+        label: 'Cancelled',
+        badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+        dotClass: 'bg-rose-400',
+      };
+    default:
+      return {
+        label: status,
+        badgeClass: 'bg-neutral-800 text-neutral-300 border-neutral-700',
+        dotClass: 'bg-neutral-400',
+      };
+  }
+}
+
+/**
+ * Format Participant Readiness confirmation.
+ */
+export function formatParticipantReadiness(readiness?: ParticipantReadiness): {
+  label: string;
+  badgeClass: string;
+} {
+  switch (readiness) {
+    case 'ready':
+      return {
+        label: 'Ready',
+        badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+      };
+    case 'needs_discussion':
+      return {
+        label: 'Needs Discussion',
+        badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+      };
+    case 'not_participating':
+      return {
+        label: 'Not Participating',
+        badgeClass: 'bg-stone-800 text-stone-400 border-stone-700',
+      };
+    case 'paused':
+      return {
+        label: 'Paused',
+        badgeClass: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
+      };
+    default:
+      return {
+        label: 'Awaiting Confirmation',
+        badgeClass: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
+      };
+  }
+}
+
+/**
+ * Format Ritual Status.
+ */
+export function formatRitualStatus(status?: RitualStatus): {
+  label: string;
+  badgeClass: string;
+} {
+  switch (status) {
+    case 'active':
+      return {
+        label: 'Active Practice',
+        badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+      };
+    case 'paused':
+      return {
+        label: 'Paused Practice',
+        badgeClass: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
+      };
+    case 'retired':
+      return {
+        label: 'Retired Practice',
+        badgeClass: 'bg-stone-800 text-stone-400 border-stone-700',
+      };
+    default:
+      return {
+        label: 'Active Practice',
+        badgeClass: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+      };
+  }
+}
+
+/**
+ * Format Ritual Recurrence.
+ */
+export function formatRitualRecurrence(recurrence: RitualRecurrence): string {
+  switch (recurrence) {
+    case 'daily':
+      return 'Daily';
+    case 'weekdays':
+      return 'Weekdays';
+    case 'weekends':
+      return 'Weekends';
+    case 'weekly':
+      return 'Weekly';
+    case 'custom':
+      return 'Custom';
+    case 'none':
+    default:
+      return 'As Needed';
+  }
+}
+
 

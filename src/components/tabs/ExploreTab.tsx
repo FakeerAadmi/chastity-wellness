@@ -18,14 +18,25 @@ import {
   Layers,
   ChevronRight,
   Users,
-  X
+  X,
+  Clock
 } from 'lucide-react';
-import { INITIAL_TOOLBOXES } from '../../data/domainDemoData';
-import { ToolboxCategory } from '../../types/domain';
+import {
+  INITIAL_TOOLBOXES,
+  INITIAL_RITUALS,
+  INITIAL_DYNAMICS,
+  INITIAL_RELATIONSHIPS,
+  ALL_USERS,
+  CURRENT_USER
+} from '../../data/domainDemoData';
+import { ToolboxCategory, Ritual } from '../../types/domain';
 import { BoundariesTab } from './BoundariesTab';
 import { KnowledgeTab } from './KnowledgeTab';
 import { VaultTab } from './VaultTab';
 import { RitualsTab } from './RitualsTab';
+import { RitualCard } from '../rituals/RitualCard';
+import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
+import { CheckInModal } from '../checkins/CheckInModal';
 
 interface ExploreTabProps {
   onOpenEmergency: () => void;
@@ -40,6 +51,17 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeToolId, setActiveToolId] = useState<string | null>(null);
+
+  // Phase 5 interactive rituals & check-in state
+  const [rituals, setRituals] = useState<Ritual[]>(INITIAL_RITUALS);
+  const [selectedRitualForExecution, setSelectedRitualForExecution] = useState<Ritual | null>(null);
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [showRitualTemplates, setShowRitualTemplates] = useState(false);
+
+  const handleCompleteRitual = (completedRitual: Ritual) => {
+    setRituals(prev => prev.map(r => r.id === completedRitual.id ? completedRitual : r));
+    setSelectedRitualForExecution(null);
+  };
 
   // Explicit adult & relationship categories
   const categories: { key: ToolboxCategory | 'all'; label: string; icon: React.ElementType }[] = [
@@ -167,7 +189,97 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
           {activeTool.id === 'tbx_sizing_calculator' && <KnowledgeTab />}
           {activeTool.id === 'tbx_hygiene_guides' && <KnowledgeTab />}
           {activeTool.id === 'tbx_chastity_vault' && <VaultTab onOpenEmergency={onOpenEmergency} />}
-          {activeTool.id === 'tbx_rituals_engine' && <RitualsTab />}
+          {activeTool.id === 'tbx_rituals_engine' && (
+            <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-[#d94f6f]" />
+                    Interactive Dynamic Rituals Engine ({rituals.length})
+                  </h3>
+                  <p className="text-xs text-[#b59ebf]">
+                    Select any active dynamic ritual to run through its structured steps and aftercare check-ins.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRitualTemplates(!showRitualTemplates)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#b59ebf] hover:text-[#fae8d7] border border-[#381e47] transition-colors"
+                >
+                  {showRitualTemplates ? 'Show Active Rituals' : 'Ritual Catalog & Templates'}
+                </button>
+              </div>
+
+              {showRitualTemplates ? (
+                <RitualsTab />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {rituals.map(rit => (
+                    <RitualCard
+                      key={rit.id}
+                      ritual={rit}
+                      dynamic={INITIAL_DYNAMICS.find(d => d.id === rit.dynamicId)}
+                      onRunRitual={r => setSelectedRitualForExecution(r)}
+                      onClick={() => setSelectedRitualForExecution(rit)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {activeTool.id === 'tbx_aftercare_debrief' && (
+            <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#d94f6f]" />
+                    Post-Scene Aftercare &amp; Emotional Integration
+                  </h3>
+                  <p className="text-xs text-[#b59ebf]">
+                    Holistic protocol monitoring drop symptoms, psychological safety, and re-entry hydration.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCheckInModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d94f6f] text-white hover:bg-[#b83856] transition-colors flex items-center gap-1.5"
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                  <span>Launch Debrief Check-in</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                  <h4 className="text-xs font-bold text-[#fae8d7] flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                    Physical Stabilization
+                  </h4>
+                  <p className="text-[11px] text-[#b59ebf] leading-relaxed">
+                    Hydration, electrolyte replacement, warm blankets, and checking pressure points or circulation marks.
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                  <h4 className="text-xs font-bold text-[#fae8d7] flex items-center gap-1.5">
+                    <Heart className="w-3.5 h-3.5 text-[#d94f6f]" />
+                    Emotional Anchoring
+                  </h4>
+                  <p className="text-[11px] text-[#b59ebf] leading-relaxed">
+                    Verbal affirmations, gratitude expression, debriefing intense moments, and holding space without rush.
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                  <h4 className="text-xs font-bold text-[#fae8d7] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    48-Hour Drop Monitor
+                  </h4>
+                  <p className="text-[11px] text-[#b59ebf] leading-relaxed">
+                    Tracking sub-drop and dom-drop vulnerability 24-48 hours post-scene with low-friction text check-ins.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           {activeTool.id === 'tbx_emergency_safety_plan' && (
             <div className="p-8 rounded-2xl bg-[#1c1026] border border-[#251433] text-center space-y-4">
               <ShieldAlert className="w-12 h-12 text-rose-400 mx-auto" />
@@ -189,6 +301,7 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
             'tbx_hygiene_guides',
             'tbx_chastity_vault',
             'tbx_rituals_engine',
+            'tbx_aftercare_debrief',
             'tbx_emergency_safety_plan'
           ].includes(activeTool.id) && (
             <div className="p-8 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-5 max-w-2xl mx-auto shadow-xl">
@@ -409,6 +522,30 @@ export const ExploreTab: React.FC<ExploreTabProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* Ritual Execution Modal */}
+      {selectedRitualForExecution && (
+        <RitualExecutionModal
+          ritual={selectedRitualForExecution}
+          isOpen={!!selectedRitualForExecution}
+          onClose={() => setSelectedRitualForExecution(null)}
+          currentUserId={CURRENT_USER.id}
+          onCompleteRitual={handleCompleteRitual}
+        />
+      )}
+
+      {/* Multi-Dimensional Check-In Modal */}
+      {isCheckInModalOpen && (
+        <CheckInModal
+          isOpen={isCheckInModalOpen}
+          onClose={() => setIsCheckInModalOpen(false)}
+          relationships={INITIAL_RELATIONSHIPS}
+          dynamics={INITIAL_DYNAMICS}
+          users={ALL_USERS}
+          currentUserId={CURRENT_USER.id}
+          onSaveCheckIn={() => setIsCheckInModalOpen(false)}
+        />
       )}
     </div>
   );

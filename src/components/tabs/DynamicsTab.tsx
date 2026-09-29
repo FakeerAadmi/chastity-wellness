@@ -19,6 +19,8 @@ import {
   INITIAL_DYNAMICS,
   INITIAL_RELATIONSHIPS,
   INITIAL_AGREEMENTS,
+  INITIAL_SESSIONS,
+  INITIAL_RITUALS,
   CURRENT_USER,
   ALL_USERS
 } from '../../data/domainDemoData';
@@ -29,10 +31,17 @@ import {
   DynamicPracticeStage,
   ADULT_EXPRESSION_TAXONOMY,
   Agreement,
+  Session,
+  Ritual,
 } from '../../types/domain';
 import { AgreementCard } from '../agreements/AgreementCard';
 import { AgreementDetailModal } from '../agreements/AgreementDetailModal';
 import { AgreementCreationModal } from '../agreements/AgreementCreationModal';
+import { SessionCard } from '../sessions/SessionCard';
+import { SessionDetailModal } from '../sessions/SessionDetailModal';
+import { SessionCreationModal } from '../sessions/SessionCreationModal';
+import { RitualCard } from '../rituals/RitualCard';
+import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
 import {
   formatDynamicType,
   formatPracticeStage
@@ -72,9 +81,35 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
   const [selectedAgreementForDetail, setSelectedAgreementForDetail] = useState<Agreement | null>(null);
   const [isCreateAgreementOpen, setIsCreateAgreementOpen] = useState(false);
 
+  // Sessions State (Phase 5)
+  const [sessions, setSessions] = useState<Session[]>(INITIAL_SESSIONS);
+  const [selectedSessionForDetail, setSelectedSessionForDetail] = useState<Session | null>(null);
+  const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
+  const [sessionFilter, setSessionFilter] = useState<'all' | 'active' | 'planned' | 'completed'>('all');
+  const [showVaultTimer, setShowVaultTimer] = useState(false);
+
+  // Rituals State (Phase 5)
+  const [rituals, setRituals] = useState<Ritual[]>(INITIAL_RITUALS);
+  const [selectedRitualForExecution, setSelectedRitualForExecution] = useState<Ritual | null>(null);
+  const [showRitualTemplates, setShowRitualTemplates] = useState(false);
+
   const selectedDynamic = dynamics.find(d => d.id === selectedDynamicId);
   const selectedRel = INITIAL_RELATIONSHIPS.find(r => r.id === selectedDynamic?.relationshipId);
   const dynamicAgreements = agreements.filter(a => a.dynamicId === selectedDynamic?.id);
+
+  // Dynamic sessions & rituals
+  const dynamicSessions = sessions.filter(s =>
+    s.dynamicId === selectedDynamic?.id || (s.relationshipId === selectedDynamic?.relationshipId && !s.dynamicId)
+  );
+
+  const filteredDynamicSessions = dynamicSessions.filter(s => {
+    if (sessionFilter === 'all') return true;
+    return s.status === sessionFilter;
+  });
+
+  const dynamicRituals = rituals.filter(r =>
+    r.dynamicId === selectedDynamic?.id || (r.relationshipId === selectedDynamic?.relationshipId && !r.dynamicId)
+  );
 
   const handleUpdateAgreement = (updated: Agreement) => {
     setAgreements(prev => prev.map(a => a.id === updated.id ? updated : a));
@@ -86,6 +121,23 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
   const handleCreateAgreement = (newAgr: Agreement) => {
     setAgreements(prev => [newAgr, ...prev]);
     setSelectedAgreementForDetail(newAgr);
+  };
+
+  const handleUpdateSession = (updated: Session) => {
+    setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
+    if (selectedSessionForDetail?.id === updated.id) {
+      setSelectedSessionForDetail(updated);
+    }
+  };
+
+  const handleCreateSession = (newSess: Session) => {
+    setSessions(prev => [newSess, ...prev]);
+    setSelectedSessionForDetail(newSess);
+  };
+
+  const handleCompleteRitual = (completedRitual: Ritual) => {
+    setRituals(prev => prev.map(r => r.id === completedRitual.id ? completedRitual : r));
+    setSelectedRitualForExecution(null);
   };
 
   // Available descriptive tags extracted across dynamics
@@ -580,7 +632,7 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
                 }`}
               >
                 <Lock className="w-3.5 h-3.5 text-[#d94f6f]" />
-                <span>Sessions &amp; Countdown (Vault)</span>
+                <span>Sessions &amp; Practice ({dynamicSessions.length})</span>
               </button>
 
               <button
@@ -592,7 +644,7 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
                 }`}
               >
                 <Heart className="w-3.5 h-3.5 text-[#d94f6f]" />
-                <span>Dynamic Rituals</span>
+                <span>Dynamic Rituals ({dynamicRituals.length})</span>
               </button>
 
               <button
@@ -660,14 +712,148 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
           )}
 
           {activeSubTab === 'sessions' && (
-            <div className="rounded-2xl bg-[#1c1026] border border-[#251433] p-4 sm:p-6">
-              <VaultTab onOpenEmergency={onOpenEmergency} />
+            <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-[#d94f6f]" />
+                    Practice &amp; Play Sessions ({dynamicSessions.length})
+                  </h3>
+                  <p className="text-xs text-[#b59ebf]">
+                    Live and planned practice instances governed by your dynamic agreements.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowVaultTimer(!showVaultTimer)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#b59ebf] hover:text-[#fae8d7] border border-[#381e47] transition-colors"
+                  >
+                    {showVaultTimer ? 'Show Session Cards' : 'Timer & Vault Utility'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateSessionOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d94f6f] text-white hover:bg-[#b83856] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d94f6f]/10"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>New Session</span>
+                  </button>
+                </div>
+              </div>
+
+              {showVaultTimer ? (
+                <div className="rounded-xl bg-[#130b1a] border border-[#251433] p-4">
+                  <VaultTab onOpenEmergency={onOpenEmergency} />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Status Filters */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(['all', 'active', 'planned', 'completed'] as const).map(flt => (
+                      <button
+                        key={flt}
+                        type="button"
+                        onClick={() => setSessionFilter(flt)}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors capitalize ${
+                          sessionFilter === flt
+                            ? 'bg-[#d94f6f] text-white font-semibold'
+                            : 'bg-[#130b1a] text-[#b59ebf] hover:text-[#fae8d7] border border-[#251433]'
+                        }`}
+                      >
+                        {flt}
+                      </button>
+                    ))}
+                  </div>
+
+                  {filteredDynamicSessions.length === 0 ? (
+                    <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                      <p className="text-xs text-[#8d7596]">No sessions found matching this filter.</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsCreateSessionOpen(true)}
+                        className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                      >
+                        Start or schedule a session for {selectedDynamic.name}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {filteredDynamicSessions.map(sess => (
+                        <SessionCard
+                          key={sess.id}
+                          session={sess}
+                          dynamic={selectedDynamic}
+                          agreement={agreements.find(a => sess.agreementIds?.includes(a.id))}
+                          users={ALL_USERS}
+                          currentUserId={CURRENT_USER.id}
+                          onClick={() => setSelectedSessionForDetail(sess)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {activeSubTab === 'rituals' && (
-            <div className="rounded-2xl bg-[#1c1026] border border-[#251433] p-4 sm:p-6">
-              <RitualsTab />
+            <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-[#d94f6f]" />
+                    Dynamic Rituals &amp; Recurring Practices ({dynamicRituals.length})
+                  </h3>
+                  <p className="text-xs text-[#b59ebf]">
+                    Interactive step-by-step protocols designed to reinforce trust, service, and connection.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowRitualTemplates(!showRitualTemplates)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#b59ebf] hover:text-[#fae8d7] border border-[#381e47] transition-colors"
+                  >
+                    {showRitualTemplates ? 'Show Active Rituals' : 'Ritual Catalog & Templates'}
+                  </button>
+                </div>
+              </div>
+
+              {showRitualTemplates ? (
+                <div className="rounded-xl bg-[#130b1a] border border-[#251433] p-4">
+                  <RitualsTab />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {dynamicRituals.length === 0 ? (
+                    <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                      <p className="text-xs text-[#8d7596]">No dynamic rituals active for this practice yet.</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowRitualTemplates(true)}
+                        className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                      >
+                        Explore Ritual Templates
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {dynamicRituals.map(rit => (
+                        <RitualCard
+                          key={rit.id}
+                          ritual={rit}
+                          dynamic={selectedDynamic}
+                          onRunRitual={r => setSelectedRitualForExecution(r)}
+                          onClick={() => setSelectedRitualForExecution(rit)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -706,6 +892,50 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
           initialRelationshipId={selectedDynamic?.relationshipId}
           initialDynamicId={selectedDynamic?.id}
           onCreateAgreement={handleCreateAgreement}
+        />
+      )}
+
+      {/* Session Detail Modal */}
+      {selectedSessionForDetail && (
+        <SessionDetailModal
+          session={selectedSessionForDetail}
+          isOpen={!!selectedSessionForDetail}
+          onClose={() => setSelectedSessionForDetail(null)}
+          relationships={INITIAL_RELATIONSHIPS}
+          dynamics={dynamics}
+          agreements={agreements}
+          users={ALL_USERS}
+          currentUserId={CURRENT_USER.id}
+          onUpdateSession={handleUpdateSession}
+          onOpenAgreement={agr => setSelectedAgreementForDetail(agr)}
+          onOpenEmergency={onOpenEmergency}
+        />
+      )}
+
+      {/* Session Creation Modal */}
+      {isCreateSessionOpen && (
+        <SessionCreationModal
+          isOpen={isCreateSessionOpen}
+          onClose={() => setIsCreateSessionOpen(false)}
+          relationships={INITIAL_RELATIONSHIPS}
+          dynamics={dynamics}
+          agreements={agreements}
+          users={ALL_USERS}
+          currentUserId={CURRENT_USER.id}
+          initialRelationshipId={selectedDynamic?.relationshipId}
+          initialDynamicId={selectedDynamic?.id}
+          onCreateSession={handleCreateSession}
+        />
+      )}
+
+      {/* Ritual Execution Modal */}
+      {selectedRitualForExecution && (
+        <RitualExecutionModal
+          ritual={selectedRitualForExecution}
+          isOpen={!!selectedRitualForExecution}
+          onClose={() => setSelectedRitualForExecution(null)}
+          currentUserId={CURRENT_USER.id}
+          onCompleteRitual={handleCompleteRitual}
         />
       )}
     </div>

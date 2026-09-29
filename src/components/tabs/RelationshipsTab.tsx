@@ -38,10 +38,17 @@ import {
   CoreConnectionContext,
   RelationshipParticipant,
   Agreement,
+  Session,
+  Ritual,
 } from '../../types/domain';
 import { AgreementCard } from '../agreements/AgreementCard';
 import { AgreementDetailModal } from '../agreements/AgreementDetailModal';
 import { AgreementCreationModal } from '../agreements/AgreementCreationModal';
+import { SessionCard } from '../sessions/SessionCard';
+import { SessionDetailModal } from '../sessions/SessionDetailModal';
+import { SessionCreationModal } from '../sessions/SessionCreationModal';
+import { RitualCard } from '../rituals/RitualCard';
+import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
 import {
   formatRelationshipStructure,
   formatConnectionContext,
@@ -103,6 +110,15 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   const [isCreateAgreementOpen, setIsCreateAgreementOpen] = useState(false);
   const [agreementFilter, setAgreementFilter] = useState<'all' | 'active' | 'negotiating' | 'paused_retired'>('all');
 
+  // Sessions State (Phase 5)
+  const [sessions, setSessions] = useState<Session[]>(INITIAL_SESSIONS);
+  const [selectedSessionForDetail, setSelectedSessionForDetail] = useState<Session | null>(null);
+  const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
+
+  // Rituals State (Phase 5)
+  const [rituals, setRituals] = useState<Ritual[]>(INITIAL_RITUALS);
+  const [selectedRitualForExecution, setSelectedRitualForExecution] = useState<Ritual | null>(null);
+
   const selectedRelationship = relationships.find(r => r.id === selectedRelId) || relationships[0];
 
   const handleUpdateAgreement = (updated: Agreement) => {
@@ -117,12 +133,35 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
     setSelectedAgreementForDetail(newAgr);
   };
 
+  const handleUpdateSession = (updated: Session) => {
+    setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
+    if (selectedSessionForDetail?.id === updated.id) {
+      setSelectedSessionForDetail(updated);
+    }
+  };
+
+  const handleCreateSession = (newSess: Session) => {
+    setSessions(prev => [newSess, ...prev]);
+    setSelectedSessionForDetail(newSess);
+  };
+
+  const handleCompleteRitual = (completedRitual: Ritual) => {
+    setRituals(prev => prev.map(r => r.id === completedRitual.id ? completedRitual : r));
+    setSelectedRitualForExecution(null);
+  };
+
   // Derive counts & activity strictly from domain data
   const getRelationshipDynamics = (relId: string) =>
     INITIAL_DYNAMICS.filter(d => d.relationshipId === relId);
 
   const getRelationshipAgreements = (relId: string) =>
     agreements.filter(a => a.relationshipId === relId);
+
+  const getRelationshipSessions = (relId: string) =>
+    sessions.filter(s => s.relationshipId === relId);
+
+  const getRelationshipRituals = (relId: string) =>
+    rituals.filter(r => r.relationshipId === relId);
 
   const getRelationshipActivity = (relId: string): ActivityEvent[] => {
     const events: ActivityEvent[] = [];
@@ -139,29 +178,29 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
     });
 
     // Sessions
-    INITIAL_SESSIONS.filter(s => s.relationshipId === relId).forEach(s => {
+    sessions.filter(s => s.relationshipId === relId).forEach(s => {
       events.push({
         id: s.id,
         type: 'session',
-        title: 'Practice Session',
+        title: s.title || 'Practice Session',
         description: s.goal || 'Structured practice recorded',
         timestamp: s.startedAt || s.createdAt
       });
     });
 
     // Rituals
-    INITIAL_RITUALS.filter(r => r.relationshipId === relId).forEach(r => {
+    rituals.filter(r => r.relationshipId === relId).forEach(r => {
       events.push({
         id: r.id,
         type: 'ritual',
-        title: 'Ritual Practice',
-        description: `${r.name} (${r.recurrence})`,
+        title: r.name,
+        description: `${r.recurrence} • ${r.completions.length > 0 ? 'Recently completed' : 'Scheduled'}`,
         timestamp: r.updatedAt
       });
     });
 
     // Agreements
-    INITIAL_AGREEMENTS.filter(a => a.relationshipId === relId).forEach(a => {
+    agreements.filter(a => a.relationshipId === relId).forEach(a => {
       events.push({
         id: a.id,
         type: 'agreement',
@@ -359,6 +398,8 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   // Selected relationship derived projections
   const currentRelDynamics = selectedRelationship ? getRelationshipDynamics(selectedRelationship.id) : [];
   const currentRelAgreements = selectedRelationship ? getRelationshipAgreements(selectedRelationship.id) : [];
+  const currentRelSessions = selectedRelationship ? getRelationshipSessions(selectedRelationship.id) : [];
+  const currentRelRituals = selectedRelationship ? getRelationshipRituals(selectedRelationship.id) : [];
   const currentRelActivity = selectedRelationship ? getRelationshipActivity(selectedRelationship.id) : [];
   const activeAgreementsCount = currentRelAgreements.filter(a => a.status === 'active' || a.status === 'agreed').length;
   const pendingAgreementsCount = currentRelAgreements.filter(a => a.status === 'negotiating' || a.status === 'pending' || a.status === 'pending_approval' || a.status === 'draft').length;
@@ -874,7 +915,91 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
             )}
           </div>
 
-          {/* Section 4: Recent Activity Feed */}
+          {/* Section 4: Scheduled & Practice Sessions */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-[#d94f6f]" />
+                  Practice &amp; Play Sessions ({currentRelSessions.length})
+                </h3>
+                <p className="text-xs text-[#b59ebf] mt-0.5">
+                  Consensual practice instances, check-in windows, and scheduled connection time.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCreateSessionOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d94f6f] text-white hover:bg-[#b83856] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d94f6f]/10 self-start sm:self-center"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Session</span>
+              </button>
+            </div>
+
+            {currentRelSessions.length === 0 ? (
+              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                <p className="text-xs text-[#8d7596]">No practice sessions recorded for this relationship yet.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateSessionOpen(true)}
+                  className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                >
+                  Schedule or start a session for {selectedRelationship.name}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {currentRelSessions.map(sess => (
+                  <SessionCard
+                    key={sess.id}
+                    session={sess}
+                    dynamic={INITIAL_DYNAMICS.find(d => d.id === sess.dynamicId)}
+                    agreement={agreements.find(a => sess.agreementIds?.includes(a.id))}
+                    users={ALL_USERS}
+                    currentUserId={CURRENT_USER.id}
+                    onClick={() => setSelectedSessionForDetail(sess)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 5: Dynamic Rituals & Practices */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                  <Heart className="w-3.5 h-3.5 text-[#d94f6f]" />
+                  Dynamic Rituals &amp; Recurring Practices ({currentRelRituals.length})
+                </h3>
+                <p className="text-xs text-[#b59ebf] mt-0.5">
+                  Interactive protocols designed to cultivate intimacy and maintain intentionality.
+                </p>
+              </div>
+            </div>
+
+            {currentRelRituals.length === 0 ? (
+              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
+                No recurring rituals currently anchored to this relationship.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {currentRelRituals.map(rit => (
+                  <RitualCard
+                    key={rit.id}
+                    ritual={rit}
+                    dynamic={INITIAL_DYNAMICS.find(d => d.id === rit.dynamicId)}
+                    onRunRitual={r => setSelectedRitualForExecution(r)}
+                    onClick={() => setSelectedRitualForExecution(rit)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 6: Recent Activity Feed */}
           <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
             <div>
               <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
@@ -1439,6 +1564,48 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
           currentUserId="usr_alex"
           initialRelationshipId={selectedRelationship?.id}
           onCreateAgreement={handleCreateAgreement}
+        />
+      )}
+
+      {/* Session Detail Modal */}
+      {selectedSessionForDetail && (
+        <SessionDetailModal
+          session={selectedSessionForDetail}
+          isOpen={!!selectedSessionForDetail}
+          onClose={() => setSelectedSessionForDetail(null)}
+          relationships={relationships}
+          dynamics={INITIAL_DYNAMICS}
+          agreements={agreements}
+          users={ALL_USERS}
+          currentUserId={CURRENT_USER.id}
+          onUpdateSession={handleUpdateSession}
+          onOpenAgreement={agr => setSelectedAgreementForDetail(agr)}
+        />
+      )}
+
+      {/* Session Creation Modal */}
+      {isCreateSessionOpen && (
+        <SessionCreationModal
+          isOpen={isCreateSessionOpen}
+          onClose={() => setIsCreateSessionOpen(false)}
+          relationships={relationships}
+          dynamics={INITIAL_DYNAMICS}
+          agreements={agreements}
+          users={ALL_USERS}
+          currentUserId={CURRENT_USER.id}
+          initialRelationshipId={selectedRelationship?.id}
+          onCreateSession={handleCreateSession}
+        />
+      )}
+
+      {/* Ritual Execution Modal */}
+      {selectedRitualForExecution && (
+        <RitualExecutionModal
+          ritual={selectedRitualForExecution}
+          isOpen={!!selectedRitualForExecution}
+          onClose={() => setSelectedRitualForExecution(null)}
+          currentUserId={CURRENT_USER.id}
+          onCompleteRitual={handleCompleteRitual}
         />
       )}
     </div>

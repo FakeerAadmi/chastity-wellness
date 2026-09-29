@@ -325,10 +325,23 @@ export interface PermissionRequest {
 }
 
 // ==========================================
-// 6. GENERIC SESSION MODEL
-// Reusable across dynamics (rituals, intimacy, communication, wellness, power exchange)
+// 6. FIRST-CLASS SESSION MODEL (Phase 5)
 // ==========================================
 export type SessionStatus = 'planned' | 'active' | 'paused' | 'completed' | 'cancelled';
+
+export type SessionType =
+  | 'dynamic_practice'
+  | 'ritual'
+  | 'check_in'
+  | 'date_connection'
+  | 'aftercare'
+  | 'custom';
+
+export type ParticipantReadiness =
+  | 'ready'
+  | 'not_participating'
+  | 'needs_discussion'
+  | 'paused';
 
 export interface SessionWellnessEntry {
   timestamp: string;
@@ -356,7 +369,9 @@ export interface SessionAftercare {
 
 export interface Session {
   id: string;
-  dynamicId: string;
+  title?: string;
+  sessionType?: SessionType;
+  dynamicId?: string;
   relationshipId: string;
   participantIds: string[];
   startedAt?: string;
@@ -365,7 +380,13 @@ export interface Session {
   intendedDurationMinutes?: number;
   actualDurationMinutes?: number;
   goal?: string;
-  agreementIds: string[];
+  agreementIds?: string[];
+  tags?: string[];
+  scheduleType?: 'now' | 'later' | 'no_fixed_time';
+  scheduledFor?: string;
+  participantReadiness?: Record<string, ParticipantReadiness>;
+  preparationNotes?: string;
+  freeformNote?: string;
   wellnessChecks: SessionWellnessEntry[];
   emotionalCheckIns: SessionEmotionalEntry[];
   aftercare?: SessionAftercare;
@@ -377,9 +398,27 @@ export interface Session {
 }
 
 // ==========================================
-// 7. RITUAL
+// 7. RITUAL (Phase 5 Interactive & Interrupted Practices)
 // ==========================================
 export type RitualRecurrence = 'daily' | 'weekdays' | 'weekends' | 'weekly' | 'custom' | 'none';
+export type RitualStatus = 'active' | 'paused' | 'retired';
+
+export interface RitualStep {
+  id: string;
+  order: number;
+  title: string;
+  prompt: string;
+  options?: string[]; // e.g. ["Good", "Tired", "Overwhelmed", "Need quiet", "Want connection", "Something feels wrong"]
+  inputType?: 'options' | 'text' | 'acknowledgement';
+  isRequired?: boolean;
+}
+
+export interface RitualStepResponse {
+  stepId: string;
+  selectedOption?: string;
+  note?: string;
+  completedAt: string;
+}
 
 export interface RitualCompletion {
   id: string;
@@ -387,18 +426,28 @@ export interface RitualCompletion {
   completedBy: string;
   note?: string;
   emotionalState?: string;
+  stepResponses?: RitualStepResponse[];
+  stoppedEarly?: boolean;
+  interruptedReason?: string;
 }
 
 export interface Ritual {
   id: string;
   relationshipId: string;
   dynamicId?: string;
+  agreementId?: string;
   name: string;
   description: string;
   type: 'romantic' | 'emotional' | 'practical' | 'sensual' | 'dynamic_discipline';
+  tags?: string[];
+  status?: RitualStatus;
   participantIds: string[];
   recurrence: RitualRecurrence;
   scheduledTime?: string;
+  steps?: RitualStep[];
+  hasCheckIn?: boolean;
+  hasAftercare?: boolean;
+  aftercarePrompt?: string;
   completions: RitualCompletion[];
   privacyLevel: 'relationship' | 'private_to_user';
   createdAt: string;
@@ -406,10 +455,14 @@ export interface Ritual {
 }
 
 // ==========================================
-// 8. CHECK-IN
+// 8. CHECK-IN (Phase 5 Multi-dimensional Relationship Pulse)
 // ==========================================
 export type CheckInType = 'relationship' | 'dynamic' | 'wellness' | 'emotional' | 'aftercare' | 'custom';
 export type CheckInScale = 'great' | 'good' | 'neutral' | 'uneasy' | 'bad' | 'need_support';
+
+export type EmotionalCheckInDimension = 'good' | 'neutral' | 'difficult' | 'need_support';
+export type ConsentCheckInDimension = 'comfortable' | 'unsure' | 'want_to_pause' | 'want_to_renegotiate';
+export type DynamicCheckInDimension = 'working_well' | 'needs_discussion' | 'boundary_concern' | 'pause_requested';
 
 export interface CheckIn {
   id: string;
@@ -420,7 +473,13 @@ export interface CheckIn {
   type: CheckInType;
   prompt: string;
   scaleResponse: CheckInScale;
+  emotionalDimension?: EmotionalCheckInDimension;
+  consentDimension?: ConsentCheckInDimension;
+  dynamicDimension?: DynamicCheckInDimension;
+  freeformFeedback?: string;
   detailNote?: string;
+  targetUserId?: string;
+  participantIds?: string[];
   isPrivateToUser: boolean;
   createdAt: string;
 }
