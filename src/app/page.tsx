@@ -14,6 +14,7 @@ import { CouplesDynamicsTab } from '@/components/tabs/CouplesDynamicsTab';
 import { BoundariesTab } from '@/components/tabs/BoundariesTab';
 import { KnowledgeTab } from '@/components/tabs/KnowledgeTab';
 import { CommunitySection } from '@/components/CommunitySection';
+import { ExperiencesTab } from '@/components/tabs/ExperiencesTab';
 import { DesiresTab } from '@/components/tabs/DesiresTab';
 import { RequestsTab } from '@/components/tabs/RequestsTab';
 import { TasksTab } from '@/components/tabs/TasksTab';
@@ -21,7 +22,17 @@ import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { EmergencyModal } from '@/components/EmergencyModal';
 import { StealthShield } from '@/components/StealthShield';
 import { Footer } from '@/components/Footer';
-import { INITIAL_HAVEN_REQUESTS, INITIAL_TASKS, CURRENT_USER } from '@/data/domainDemoData';
+import {
+  INITIAL_HAVEN_REQUESTS,
+  INITIAL_TASKS,
+  INITIAL_EXPERIENCES,
+  INITIAL_RELATIONSHIPS,
+  INITIAL_DYNAMICS,
+  INITIAL_AGREEMENTS,
+  ALL_USERS,
+  CURRENT_USER
+} from '@/data/domainDemoData';
+import { Experience } from '@/types/domain';
 
 export default function Home() {
   const [screenMode, setScreenMode] = useState<'splash' | 'onboarding' | 'app'>('splash');
@@ -30,6 +41,15 @@ export default function Home() {
   const [isEmergencyOpen, setIsEmergencyOpen] = useState<boolean>(false);
   const [isStealthActive, setIsStealthActive] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<'Wearer' | 'Keyholder' | 'Explorer'>('Wearer');
+  const [experiences, setExperiences] = useState<Experience[]>(INITIAL_EXPERIENCES);
+
+  const handleUpdateExperience = (updated: Experience) => {
+    setExperiences(prev => prev.map(e => (e.id === updated.id ? updated : e)));
+  };
+
+  const handleCreateExperience = (created: Experience) => {
+    setExperiences(prev => [created, ...prev]);
+  };
 
   // Check if user has previously completed onboarding
   useEffect(() => {
@@ -97,6 +117,11 @@ export default function Home() {
                 t => t.assignedToIds.includes(CURRENT_USER.id) && t.status !== 'completed' && t.status !== 'verified'
               ).length
             }
+            experiencesActiveCount={
+              experiences.filter(
+                e => e.status === 'in_progress' || e.status === 'ready' || e.status === 'paused'
+              ).length
+            }
           />
 
           {/* Spacious Main Canvas */}
@@ -106,6 +131,8 @@ export default function Home() {
                 onNavigateTab={setActiveTab}
                 onOpenEmergency={() => setIsEmergencyOpen(true)}
                 userRole={userRole}
+                experiences={experiences}
+                onUpdateExperience={handleUpdateExperience}
               />
             )}
 
@@ -123,6 +150,21 @@ export default function Home() {
               <DynamicsTab
                 initialDynamicId={selectedDynamicId}
                 onOpenEmergency={() => setIsEmergencyOpen(true)}
+              />
+            )}
+
+            {activeTab === 'experiences' && (
+              <ExperiencesTab
+                experiences={experiences}
+                relationships={INITIAL_RELATIONSHIPS}
+                dynamics={INITIAL_DYNAMICS}
+                agreements={INITIAL_AGREEMENTS}
+                users={ALL_USERS}
+                currentUserId={CURRENT_USER.id}
+                onUpdateExperience={handleUpdateExperience}
+                onCreateExperience={handleCreateExperience}
+                onOpenEmergency={() => setIsEmergencyOpen(true)}
+                onNavigateTab={setActiveTab}
               />
             )}
 

@@ -15,7 +15,8 @@ import {
   X,
   Check,
   Flame,
-  ListChecks
+  ListChecks,
+  Layers
 } from 'lucide-react';
 import {
   INITIAL_DYNAMICS,
@@ -26,6 +27,7 @@ import {
   INITIAL_DESIRES,
   INITIAL_HAVEN_REQUESTS,
   INITIAL_TASKS,
+  INITIAL_EXPERIENCES,
   CURRENT_USER,
   ALL_USERS
 } from '../../data/domainDemoData';
@@ -43,6 +45,7 @@ import {
   HavenTask,
   DesireRating,
   TaskProof,
+  Experience
 } from '../../types/domain';
 import { AgreementCard } from '../agreements/AgreementCard';
 import { AgreementDetailModal } from '../agreements/AgreementDetailModal';
@@ -58,6 +61,8 @@ import { RequestCard } from '../requests/RequestCard';
 import { RequestCreationModal } from '../requests/RequestCreationModal';
 import { TaskCard } from '../tasks/TaskCard';
 import { TaskCreationModal } from '../tasks/TaskCreationModal';
+import { ExperienceCard } from '../experiences/ExperienceCard';
+import { ExperienceExecutionModal } from '../experiences/ExperienceExecutionModal';
 import {
   formatDynamicType,
   formatPracticeStage
@@ -82,7 +87,9 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
   const [filterStatus, setFilterStatus] = useState<DynamicStatus | 'all'>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'requests' | 'tasks' | 'sessions' | 'rituals' | 'desires' | 'permissions'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'experiences' | 'requests' | 'tasks' | 'sessions' | 'rituals' | 'desires' | 'permissions'>('overview');
+  const [experiences, setExperiences] = useState<Experience[]>(INITIAL_EXPERIENCES);
+  const [selectedExperienceForExecution, setSelectedExperienceForExecution] = useState<Experience | null>(null);
 
   // Dynamic creation state
   const [isCreating, setIsCreating] = useState(false);
@@ -142,6 +149,10 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
 
   const dynamicTasks = tasks.filter(t =>
     t.dynamicId === selectedDynamic?.id || (t.relationshipId === selectedDynamic?.relationshipId && !t.dynamicId)
+  );
+
+  const dynamicExperiences = experiences.filter(e =>
+    e.dynamicId === selectedDynamic?.id || (e.relationshipId === selectedDynamic?.relationshipId && !e.dynamicId)
   );
 
   const dynamicDesires = desires.filter(d =>
@@ -830,6 +841,18 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
               </button>
 
               <button
+                onClick={() => setActiveSubTab('experiences')}
+                className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeSubTab === 'experiences'
+                    ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50'
+                    : 'text-[#b59ebf] hover:text-[#fae8d7] hover:bg-[#150a1e]'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-[#d94f6f]" />
+                <span>Experiences ({dynamicExperiences.length})</span>
+              </button>
+
+              <button
                 onClick={() => setActiveSubTab('requests')}
                 className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
                   activeSubTab === 'requests'
@@ -946,6 +969,42 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
                       users={ALL_USERS}
                       currentUserId="usr_alex"
                       onClick={() => setSelectedAgreementForDetail(agr)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeSubTab === 'experiences' && (
+            <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-[#d94f6f]" />
+                    <span>Dynamic Experiences & Guided Journeys ({dynamicExperiences.length})</span>
+                  </h3>
+                  <p className="text-xs text-[#b59ebf]">
+                    Sensory immersion, branching decision flows, and erotic practices governed by your agreements.
+                  </p>
+                </div>
+              </div>
+
+              {dynamicExperiences.length === 0 ? (
+                <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                  <p className="text-xs text-[#8d7596]">No experiences created yet for this dynamic.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {dynamicExperiences.map(exp => (
+                    <ExperienceCard
+                      key={exp.id}
+                      experience={exp}
+                      users={ALL_USERS}
+                      currentUserId={CURRENT_USER.id}
+                      onSelect={setSelectedExperienceForExecution}
+                      onStart={setSelectedExperienceForExecution}
+                      onResume={setSelectedExperienceForExecution}
                     />
                   ))}
                 </div>
@@ -1378,6 +1437,21 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
           dynamics={dynamics}
           initialDynamicId={selectedDynamic?.id}
           onCreateTask={handleCreateTask}
+        />
+      )}
+
+      {/* Experience Execution Modal */}
+      {selectedExperienceForExecution && (
+        <ExperienceExecutionModal
+          isOpen={Boolean(selectedExperienceForExecution)}
+          onClose={() => setSelectedExperienceForExecution(null)}
+          experience={selectedExperienceForExecution}
+          users={ALL_USERS}
+          currentUserId={CURRENT_USER.id}
+          onUpdateExperience={updated => {
+            setExperiences(prev => prev.map(e => (e.id === updated.id ? updated : e)));
+          }}
+          onOpenEmergency={onOpenEmergency}
         />
       )}
     </div>

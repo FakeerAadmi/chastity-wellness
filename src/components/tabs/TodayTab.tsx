@@ -17,11 +17,8 @@ import {
   Play,
   Flame,
   Gift,
-  Camera,
   CheckSquare,
-  Inbox,
   GitFork,
-  ChevronRight,
   Circle
 } from 'lucide-react';
 import {
@@ -33,11 +30,11 @@ import {
   INITIAL_HAVEN_REQUESTS,
   INITIAL_DESIRES,
   INITIAL_TASKS,
-  INITIAL_PERMISSION_REQUESTS,
   INITIAL_SESSIONS,
   INITIAL_AGREEMENTS,
   INITIAL_CHECKINS,
-  INITIAL_SAFETY_PLAN
+  INITIAL_SAFETY_PLAN,
+  INITIAL_EXPERIENCES
 } from '../../data/domainDemoData';
 import {
   CheckInScale,
@@ -47,7 +44,8 @@ import {
   HavenRequest,
   Desire,
   HavenTask,
-  TaskProof
+  TaskProof,
+  Experience
 } from '../../types/domain';
 import { SessionCard } from '../sessions/SessionCard';
 import { SessionDetailModal } from '../sessions/SessionDetailModal';
@@ -56,19 +54,28 @@ import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
 import { CheckInModal } from '../checkins/CheckInModal';
 import { TaskProofModal } from '../tasks/TaskProofModal';
 import { RequestCounterModal } from '../requests/RequestCounterModal';
+import { ExperienceExecutionModal } from '../experiences/ExperienceExecutionModal';
 
 interface TodayTabProps {
   onNavigateTab: (tab: string) => void;
   onOpenEmergency: () => void;
   userRole: 'Wearer' | 'Keyholder' | 'Explorer';
+  experiences?: Experience[];
+  onUpdateExperience?: (updated: Experience) => void;
 }
 
 export const TodayTab: React.FC<TodayTabProps> = ({
   onNavigateTab,
   onOpenEmergency,
-  userRole
+  userRole,
+  experiences: propExperiences,
+  onUpdateExperience: propOnUpdateExperience
 }) => {
   // Local interactive states for sessions, rituals & check-ins
+  const [experiences, setExperiences] = useState<Experience[]>(
+    propExperiences || INITIAL_EXPERIENCES
+  );
+  const [selectedExperienceForExecution, setSelectedExperienceForExecution] = useState<Experience | null>(null);
   const [sessions, setSessions] = useState<Session[]>(INITIAL_SESSIONS);
   const [rituals, setRituals] = useState<Ritual[]>(INITIAL_RITUALS);
   const [, setCheckins] = useState<CheckIn[]>(INITIAL_CHECKINS);
@@ -272,6 +279,19 @@ export const TodayTab: React.FC<TodayTabProps> = ({
     agreementsInNegotiation.length;
   const completedRitualsCount = rituals.filter(r => r.completions.length > 0).length;
 
+  const currentExperiences = propExperiences || experiences;
+  const spotlightExperience =
+    currentExperiences.find(e => e.status === 'in_progress' || e.status === 'paused') ||
+    currentExperiences.find(e => e.status === 'ready') ||
+    currentExperiences.find(e => e.status === 'scheduled');
+
+  const handleUpdateExperienceInternal = (updated: Experience) => {
+    setExperiences(prev => prev.map(e => (e.id === updated.id ? updated : e)));
+    if (propOnUpdateExperience) {
+      propOnUpdateExperience(updated);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       {/* 1. Header Greeting & Today's Vital Overview */}
@@ -319,6 +339,60 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Experience Spotlight / Happening Now */}
+      {spotlightExperience && (
+        <section className="p-5 rounded-2xl bg-gradient-to-r from-[#241334] via-[#1a0c26] to-[#12081a] border border-[#d94f6f]/40 shadow-lg space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    spotlightExperience.status === 'in_progress'
+                      ? 'bg-emerald-400 animate-ping'
+                      : 'bg-rose-400'
+                  }`}
+                />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#d94f6f]">
+                  {spotlightExperience.status === 'in_progress' ? 'Happening Now' : 'Anticipated Practice'}
+                </span>
+                <span className="text-xs text-[#b59ebf]">•</span>
+                <span className="text-xs text-rose-200 font-semibold">
+                  {spotlightExperience.title}
+                </span>
+              </div>
+              {spotlightExperience.intent && (
+                <p className="text-xs text-[#d4af37] italic font-serif">
+                  &ldquo;{spotlightExperience.intent}&rdquo;
+                </p>
+              )}
+              <p className="text-xs text-[#b59ebf] max-w-xl">
+                {spotlightExperience.description}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+              <button
+                onClick={() => onNavigateTab('experiences')}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#b59ebf] hover:text-[#fae8d7] bg-[#251433] border border-[#381e47] transition-colors"
+              >
+                All Experiences
+              </button>
+              <button
+                onClick={() => setSelectedExperienceForExecution(spotlightExperience)}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#d94f6f] to-[#7c3aed] hover:from-[#e25c7c] hover:to-[#8b4bf3] shadow-md shadow-[#d94f6f]/25 transition-all hover:scale-[1.02]"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>
+                  {spotlightExperience.status === 'in_progress'
+                    ? 'Resume Journey'
+                    : 'Begin Experience'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 2. Things That Need You (Action Required) */}
       <section className="space-y-3">
@@ -1026,6 +1100,19 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           onClose={() => setCounterModalRequest(null)}
           request={counterModalRequest}
           onSendCounterProposal={handleSendCounterProposal}
+        />
+      )}
+
+      {/* Experience Execution Modal */}
+      {selectedExperienceForExecution && (
+        <ExperienceExecutionModal
+          isOpen={Boolean(selectedExperienceForExecution)}
+          onClose={() => setSelectedExperienceForExecution(null)}
+          experience={selectedExperienceForExecution}
+          users={ALL_USERS}
+          currentUserId={CURRENT_USER.id}
+          onUpdateExperience={handleUpdateExperienceInternal}
+          onOpenEmergency={onOpenEmergency}
         />
       )}
     </div>

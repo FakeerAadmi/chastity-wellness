@@ -3,10 +3,7 @@
 import React from 'react';
 import {
   Shield,
-  Key,
   Heart,
-  FileSpreadsheet,
-  BookOpen,
   MessageSquare,
   AlertTriangle,
   User,
@@ -17,7 +14,8 @@ import {
   Compass,
   Flame,
   Inbox,
-  CheckSquare
+  CheckSquare,
+  Layers
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -31,6 +29,7 @@ interface HeaderProps {
   setUserRole: (role: 'Wearer' | 'Keyholder' | 'Explorer') => void;
   pendingRequestsCount?: number;
   tasksDueCount?: number;
+  experiencesActiveCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -43,12 +42,14 @@ export const Header: React.FC<HeaderProps> = ({
   userRole,
   setUserRole,
   pendingRequestsCount = 0,
-  tasksDueCount = 0
+  tasksDueCount = 0,
+  experiencesActiveCount = 0
 }) => {
   const tabs = [
     { id: 'today', label: 'Today', icon: Sparkles },
     { id: 'relationships', label: 'Relationships', icon: Users },
     { id: 'dynamics', label: 'Dynamics', icon: Heart },
+    { id: 'experiences', label: 'Experiences', icon: Layers, badge: experiencesActiveCount },
     { id: 'desires', label: 'Desires', icon: Flame },
     { id: 'requests', label: 'Requests', icon: Inbox, badge: pendingRequestsCount },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare, badge: tasksDueCount },

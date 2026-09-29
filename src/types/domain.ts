@@ -752,3 +752,133 @@ export interface CommunityPost {
   isFlaggedForReview?: boolean;
   createdAt: string;
 }
+
+// ==========================================
+// 13. CANONICAL EXPERIENCE LAYER (Phase 7)
+// ==========================================
+export type ExperienceType =
+  | 'scene'
+  | 'ritual'
+  | 'game'
+  | 'date'
+  | 'challenge'
+  | 'conversation'
+  | 'protocol'
+  | 'exploration'
+  | 'service'
+  | 'roleplay'
+  | 'long_distance'
+  | 'chastity'
+  | 'aftercare'
+  | 'custom'
+  | 'bdsm_scene'
+  | 'chastity_tease'
+  | 'cuckold_fantasy'
+  | 'sensory'
+  | 'erotic_ritual'
+  | 'reconnection';
+
+export type ExperienceStatus =
+  | 'draft'
+  | 'proposed'
+  | 'awaiting_consent'
+  | 'ready'
+  | 'scheduled'
+  | 'active'
+  | 'in_progress'
+  | 'paused'
+  | 'completed'
+  | 'safeword_stopped'
+  | 'cancelled'
+  | 'abandoned'
+  | 'archived';
+
+export type ExperienceStepType =
+  | 'readiness_check'
+  | 'instruction'
+  | 'prompt'
+  | 'timed_action'
+  | 'decision_branch'
+  | 'task_action'
+  | 'check_in'
+  | 'aftercare'
+  | 'action'
+  | 'sensory'
+  | 'timer'
+  | 'reflection';
+
+export interface ExperienceStepOption {
+  id: string;
+  label: string;
+  description?: string;
+  nextStepId?: string; // Branch destination if chosen
+  branchTag?: string; // e.g. 'sensory_gentle' | 'strict_discipline' | 'debrief_now'
+}
+
+export interface ExperienceStep {
+  id: string;
+  order: number;
+  title: string;
+  stepType: ExperienceStepType;
+  description?: string;
+  prompt?: string;
+  durationMinutes?: number;
+  roleAssignment?: 'all' | 'dominant' | 'submissive' | 'keyholder' | 'wearer' | 'initiator' | string;
+  options?: ExperienceStepOption[];
+  requiresAllReady?: boolean;
+  nextStepId?: string; // Default next step if linear
+  isOptional?: boolean;
+}
+
+export interface ExperienceStepHistoryEntry {
+  stepId: string;
+  stepTitle: string;
+  completedAt: string;
+  actorId?: string;
+  selectedOptionId?: string;
+  selectedOptionLabel?: string;
+  note?: string;
+  timeSpentSeconds?: number;
+}
+
+export interface ExperienceExecutionState {
+  currentStepId: string;
+  stepHistory: ExperienceStepHistoryEntry[];
+  startedAt?: string;
+  pausedAt?: string;
+  completedAt?: string;
+  isPaused: boolean;
+  safewordTriggered: boolean;
+  safewordTriggeredBy?: string;
+  safewordType?: 'red_stop' | 'yellow_slow' | 'pause';
+  aftercareCompleted: boolean;
+  reflectionNotes?: string;
+}
+
+export interface Experience {
+  id: string;
+  title: string;
+  description: string;
+  intent?: string; // Purpose or emotional goal (e.g. "Deepen surrender through tactile stillness")
+  experienceType: ExperienceType;
+  status: ExperienceStatus;
+  relationshipId: string;
+  dynamicId?: string;
+  desireId?: string; // Originating desire (e.g. double-blind match)
+  requestId?: string; // Originating request/proposal
+  agreementIds?: string[]; // Bound by agreed covenants
+  participantIds: string[];
+  participantRoles?: Record<string, string>; // Contextual role per user (e.g. { usr_alex: 'Dominant', usr_jordan: 'Submissive' })
+  participantReadiness?: Record<string, 'ready' | 'not_ready' | 'needs_discussion' | 'declined'>;
+  scheduledFor?: string;
+  estimatedDurationMinutes?: number;
+  tags?: string[];
+  isTemplate?: boolean;
+  templateSourceId?: string;
+  steps: ExperienceStep[];
+  executionState?: ExperienceExecutionState;
+  createdById: string;
+  visibility: 'participants_only' | 'relationship_shared' | 'private';
+  createdAt: string;
+  updatedAt: string;
+}
