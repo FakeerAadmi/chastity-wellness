@@ -84,17 +84,61 @@ export function toLegacyPermissionRequest(
 }
 
 /**
+ * Human-readable label for canonical relationship structures.
+ */
+export function formatRelationshipStructure(structure?: string): string {
+  switch (structure) {
+    case 'monogamous':
+      return 'Monogamous';
+    case 'polyamorous':
+      return 'Polyamorous';
+    case 'open':
+      return 'Open';
+    case 'solo_exploration':
+      return 'Solo exploration';
+    case 'custom':
+      return 'Custom';
+    default:
+      return structure ? structure.replace(/_/g, ' ') : 'Partnership';
+  }
+}
+
+/**
+ * Human-readable label for canonical connection contexts.
+ */
+export function formatConnectionContext(context: string): string {
+  switch (context) {
+    case 'cohabitating':
+      return 'Cohabitating';
+    case 'nesting':
+      return 'Nesting';
+    case 'long_distance':
+      return 'Long-distance';
+    case 'dating':
+      return 'Dating';
+    case 'occasional':
+      return 'Occasional';
+    case 'custom':
+      return 'Custom';
+    default:
+      return context.replace(/_/g, ' ');
+  }
+}
+
+/**
+ * Formats a list of connection contexts into a bullet-separated string (e.g. "Cohabitating · Nesting").
+ */
+export function formatConnectionContextsList(contexts?: string[]): string {
+  if (!contexts || contexts.length === 0) return 'Context not specified';
+  return contexts.map(formatConnectionContext).join(' · ');
+}
+
+/**
  * Formats a relationship's multidimensional characteristics into a human-readable display string.
  */
 export function formatRelationshipDimensions(relationship: Relationship): string {
-  const structureLabel = relationship.structure
-    ? relationship.structure.replace(/_/g, ' ')
-    : 'Partnership';
-
-  const contextLabels = (relationship.connectionContexts || [])
-    .map(ctx => ctx.replace(/_/g, ' '))
-    .join(', ');
-
+  const structureLabel = formatRelationshipStructure(relationship.structure);
+  const contextLabels = (relationship.connectionContexts || []).map(formatConnectionContext).join(' · ');
   return contextLabels ? `${structureLabel} • ${contextLabels}` : structureLabel;
 }
 

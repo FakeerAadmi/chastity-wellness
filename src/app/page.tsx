@@ -97,6 +97,7 @@ export default function Home() {
 
             {activeTab === 'relationships' && (
               <RelationshipsTab
+                onNavigateTab={setActiveTab}
                 onNavigateDynamic={(dynamicId) => {
                   setSelectedDynamicId(dynamicId);
                   setActiveTab('dynamics');

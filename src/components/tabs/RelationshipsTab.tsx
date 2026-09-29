@@ -6,392 +6,781 @@ import {
   Plus,
   Shield,
   ArrowRight,
+  ArrowLeft,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Clock,
+  Heart,
+  Pencil,
+  Pause,
+  Play,
+  Archive,
+  RotateCcw,
+  UserPlus,
+  Trash2,
+  ShieldCheck,
+  Check
 } from 'lucide-react';
 import {
   INITIAL_RELATIONSHIPS,
   INITIAL_DYNAMICS,
   INITIAL_AGREEMENTS,
+  INITIAL_CHECKINS,
+  INITIAL_SESSIONS,
+  INITIAL_RITUALS,
   CURRENT_USER
 } from '../../data/domainDemoData';
-import { Relationship, RelationshipStatus, CoreRelationshipStructure, CoreConnectionContext } from '../../types/domain';
-import { formatRelationshipDimensions, formatAgreementScope } from '../../types/legacyAdapters';
+import {
+  Relationship,
+  RelationshipStatus,
+  CoreRelationshipStructure,
+  CoreConnectionContext,
+  RelationshipParticipant
+} from '../../types/domain';
+import {
+  formatRelationshipStructure,
+  formatConnectionContext,
+  formatConnectionContextsList,
+  formatAgreementScope
+} from '../../types/legacyAdapters';
 
 interface RelationshipsTabProps {
   onNavigateDynamic?: (dynamicId: string) => void;
+  onNavigateTab?: (tab: string) => void;
+}
+
+interface ActivityEvent {
+  id: string;
+  type: 'checkin' | 'session' | 'ritual' | 'agreement';
+  title: string;
+  description: string;
+  timestamp: string;
 }
 
 export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
-  onNavigateDynamic
+  onNavigateDynamic,
+  onNavigateTab
 }) => {
   const [relationships, setRelationships] = useState<Relationship[]>(INITIAL_RELATIONSHIPS);
-  const [selectedRelId, setSelectedRelId] = useState<string>(INITIAL_RELATIONSHIPS[0].id);
-  const [filterStatus, setFilterStatus] = useState<RelationshipStatus | 'all'>('all');
+  const [selectedRelId, setSelectedRelId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+  const [filterStatus, setFilterStatus] = useState<RelationshipStatus | 'all'>('active');
+
+  // Creation Wizard State
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [createStep, setCreateStep] = useState<number>(1);
   const [newRelName, setNewRelName] = useState('');
   const [newRelStructure, setNewRelStructure] = useState<CoreRelationshipStructure>('monogamous');
-  const [newRelContext, setNewRelContext] = useState<CoreConnectionContext>('cohabitating');
-  const [newPartnerName, setNewPartnerName] = useState('');
+  const [newRelContexts, setNewRelContexts] = useState<CoreConnectionContext[]>(['cohabitating']);
+  const [newUserRole, setNewUserRole] = useState('');
+  const [additionalParticipants, setAdditionalParticipants] = useState<Array<{ displayName: string; roleDescription?: string }>>([
+    { displayName: '', roleDescription: '' }
+  ]);
+  const [newRelDescription, setNewRelDescription] = useState('');
+
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editStructure, setEditStructure] = useState<CoreRelationshipStructure>('monogamous');
+  const [editContexts, setEditContexts] = useState<CoreConnectionContext[]>([]);
+  const [editDescription, setEditDescription] = useState('');
+  const [editPrivacy, setEditPrivacy] = useState<'participants_only' | 'private'>('participants_only');
+
+  // Add Participant Modal State
+  const [isAddParticipantOpen, setIsAddParticipantOpen] = useState(false);
+  const [newParticipantName, setNewParticipantName] = useState('');
+  const [newParticipantRole, setNewParticipantRole] = useState('');
+
+  // Future Agreements Modal State
+  const [isAgreementsNoticeOpen, setIsAgreementsNoticeOpen] = useState(false);
 
   const selectedRelationship = relationships.find(r => r.id === selectedRelId) || relationships[0];
 
-  // Associated dynamics for the selected relationship
-  const relDynamics = INITIAL_DYNAMICS.filter(d => d.relationshipId === selectedRelationship.id);
-  const relAgreements = INITIAL_AGREEMENTS.filter(a => a.relationshipId === selectedRelationship.id);
+  // Derive counts & activity strictly from domain data
+  const getRelationshipDynamics = (relId: string) =>
+    INITIAL_DYNAMICS.filter(d => d.relationshipId === relId);
 
-  const handleCreateRelationship = (e: React.FormEvent) => {
+  const getRelationshipAgreements = (relId: string) =>
+    INITIAL_AGREEMENTS.filter(a => a.relationshipId === relId);
+
+  const getRelationshipActivity = (relId: string): ActivityEvent[] => {
+    const events: ActivityEvent[] = [];
+
+    // Check-ins
+    INITIAL_CHECKINS.filter(c => c.relationshipId === relId).forEach(c => {
+      events.push({
+        id: c.id,
+        type: 'checkin',
+        title: 'Consensual Check-in',
+        description: c.detailNote ? `"${c.detailNote}"` : c.prompt,
+        timestamp: c.createdAt
+      });
+    });
+
+    // Sessions
+    INITIAL_SESSIONS.filter(s => s.relationshipId === relId).forEach(s => {
+      events.push({
+        id: s.id,
+        type: 'session',
+        title: 'Practice Session',
+        description: s.goal || 'Structured practice recorded',
+        timestamp: s.startedAt || s.createdAt
+      });
+    });
+
+    // Rituals
+    INITIAL_RITUALS.filter(r => r.relationshipId === relId).forEach(r => {
+      events.push({
+        id: r.id,
+        type: 'ritual',
+        title: 'Ritual Practice',
+        description: `${r.name} (${r.recurrence})`,
+        timestamp: r.updatedAt
+      });
+    });
+
+    // Agreements
+    INITIAL_AGREEMENTS.filter(a => a.relationshipId === relId).forEach(a => {
+      events.push({
+        id: a.id,
+        type: 'agreement',
+        title: 'Shared Agreement',
+        description: `${a.title} • ${a.status === 'agreed' ? 'Agreed' : 'Pending Review'}`,
+        timestamp: a.updatedAt
+      });
+    });
+
+    // Sort descending by timestamp
+    return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  };
+
+  const formatParticipantsSummary = (participants: RelationshipParticipant[]): string => {
+    if (!participants || participants.length === 0) return 'No participants';
+    const names = participants.map(p => (p.userId === CURRENT_USER.id ? 'You' : p.displayName));
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return `${names[0]}, ${names[1]}`;
+    return `${names.slice(0, -1).join(', ')} & ${names[names.length - 1]}`;
+  };
+
+  const formatTimeSnippet = (isoString: string): string => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch {
+      return '';
+    }
+  };
+
+  // Status Handlers
+  const handleTogglePause = (relId: string) => {
+    setRelationships(prev =>
+      prev.map(r => {
+        if (r.id === relId) {
+          const newStatus: RelationshipStatus = r.status === 'active' ? 'paused' : 'active';
+          return { ...r, status: newStatus, updatedAt: new Date().toISOString() };
+        }
+        return r;
+      })
+    );
+  };
+
+  const handleToggleArchive = (relId: string) => {
+    setRelationships(prev =>
+      prev.map(r => {
+        if (r.id === relId) {
+          const newStatus: RelationshipStatus = r.status === 'archived' ? 'active' : 'archived';
+          return { ...r, status: newStatus, updatedAt: new Date().toISOString() };
+        }
+        return r;
+      })
+    );
+  };
+
+  // Edit Handlers
+  const handleOpenEditModal = (rel: Relationship) => {
+    setEditName(rel.name);
+    setEditStructure((rel.structure as CoreRelationshipStructure) || 'monogamous');
+    setEditContexts(rel.connectionContexts as CoreConnectionContext[]);
+    setEditDescription(rel.description || '');
+    setEditPrivacy(rel.privacy || 'participants_only');
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim()) return;
+
+    setRelationships(prev =>
+      prev.map(r => {
+        if (r.id === selectedRelationship.id) {
+          return {
+            ...r,
+            name: editName.trim(),
+            structure: editStructure,
+            connectionContexts: editContexts.length > 0 ? editContexts : ['custom'],
+            description: editDescription.trim(),
+            privacy: editPrivacy,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return r;
+      })
+    );
+    setIsEditModalOpen(false);
+  };
+
+  // Add Participant Handlers
+  const handleAddParticipant = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newParticipantName.trim()) return;
+
+    const newMember: RelationshipParticipant = {
+      userId: `usr_${Date.now()}`,
+      displayName: newParticipantName.trim(),
+      joinedAt: new Date().toISOString(),
+      ...(newParticipantRole.trim() ? { roleDescription: newParticipantRole.trim() } : {})
+    };
+
+    setRelationships(prev =>
+      prev.map(r => {
+        if (r.id === selectedRelationship.id) {
+          return {
+            ...r,
+            participants: [...r.participants, newMember],
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return r;
+      })
+    );
+
+    setNewParticipantName('');
+    setNewParticipantRole('');
+    setIsAddParticipantOpen(false);
+  };
+
+  // Creation Wizard Handlers
+  const handleStartCreate = () => {
+    setCreateStep(1);
+    setNewRelName('');
+    setNewRelStructure('monogamous');
+    setNewRelContexts(['cohabitating']);
+    setNewUserRole('');
+    setAdditionalParticipants([{ displayName: '', roleDescription: '' }]);
+    setNewRelDescription('');
+    setIsCreatingNew(true);
+  };
+
+  const handleFinishCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRelName.trim()) return;
+
+    const participants: RelationshipParticipant[] = [
+      {
+        userId: CURRENT_USER.id,
+        displayName: CURRENT_USER.displayName,
+        joinedAt: new Date().toISOString(),
+        ...(newUserRole.trim() ? { roleDescription: newUserRole.trim() } : {})
+      }
+    ];
+
+    additionalParticipants.forEach((p, idx) => {
+      if (p.displayName.trim()) {
+        participants.push({
+          userId: `usr_${Date.now()}_${idx}`,
+          displayName: p.displayName.trim(),
+          joinedAt: new Date().toISOString(),
+          ...(p.roleDescription?.trim() ? { roleDescription: p.roleDescription.trim() } : {})
+        });
+      }
+    });
 
     const newRel: Relationship = {
       id: `rel_${Date.now()}`,
       name: newRelName.trim(),
       structure: newRelStructure,
-      connectionContexts: [newRelContext],
+      connectionContexts: newRelContexts.length > 0 ? newRelContexts : ['custom'],
       status: 'active',
       privacy: 'participants_only',
-      description: 'Newly defined relationship in Haven.',
-      participants: [
-        {
-          userId: CURRENT_USER.id,
-          displayName: CURRENT_USER.displayName,
-          joinedAt: new Date().toISOString(),
-          roleDescription: 'Initiating Partner',
-        },
-        ...(newPartnerName.trim()
-          ? [
-              {
-                userId: `usr_${Date.now()}`,
-                displayName: newPartnerName.trim(),
-                joinedAt: new Date().toISOString(),
-              },
-            ]
-          : []),
-      ],
+      description: newRelDescription.trim() || 'Consensual connection defined in Haven.',
+      participants,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     setRelationships(prev => [newRel, ...prev]);
     setSelectedRelId(newRel.id);
+    setViewMode('detail');
     setIsCreatingNew(false);
-    setNewRelName('');
-    setNewPartnerName('');
   };
 
-  const handleUpdateStatus = (status: RelationshipStatus) => {
-    setRelationships(prev =>
-      prev.map(r => (r.id === selectedRelationship.id ? { ...r, status, updatedAt: new Date().toISOString() } : r))
-    );
+  const toggleContextSelection = (
+    context: CoreConnectionContext,
+    currentList: CoreConnectionContext[],
+    setList: React.Dispatch<React.SetStateAction<CoreConnectionContext[]>>
+  ) => {
+    if (currentList.includes(context)) {
+      setList(currentList.filter(c => c !== context));
+    } else {
+      setList([...currentList, context]);
+    }
   };
 
+  // Filtered List
   const filteredRelationships = relationships.filter(r =>
     filterStatus === 'all' ? true : r.status === filterStatus
   );
 
+  const activeCount = relationships.filter(r => r.status === 'active').length;
+  const pausedCount = relationships.filter(r => r.status === 'paused').length;
+  const archivedCount = relationships.filter(r => r.status === 'archived').length;
+
+  // Selected relationship derived projections
+  const currentRelDynamics = selectedRelationship ? getRelationshipDynamics(selectedRelationship.id) : [];
+  const currentRelAgreements = selectedRelationship ? getRelationshipAgreements(selectedRelationship.id) : [];
+  const currentRelActivity = selectedRelationship ? getRelationshipActivity(selectedRelationship.id) : [];
+  const activeAgreementsCount = currentRelAgreements.filter(a => a.status === 'agreed').length;
+  const pendingAgreementsCount = currentRelAgreements.filter(a => a.status === 'pending').length;
+
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
-      {/* Header */}
+    <div className="space-y-8 animate-fade-in pb-16">
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#1c1026] border border-[#251433]">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-[#d94f6f] uppercase tracking-wider mb-1">
             <Users className="w-3.5 h-3.5" />
-            <span>Relationship Architecture</span>
+            <span>Connection Containers</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#fae8d7]">Relationships</h1>
           <p className="text-sm text-[#b59ebf] mt-1 max-w-xl">
-            In Haven, dynamics live within consensual relationships. Define multi-person, long-distance, or primary connections with distinct roles and boundaries.
+            The people and connections that matter in your Haven.
           </p>
         </div>
 
         <button
-          onClick={() => setIsCreatingNew(!isCreatingNew)}
+          onClick={handleStartCreate}
           className="px-4 py-2.5 rounded-xl text-xs font-bold bg-[#d94f6f] hover:bg-[#b83856] text-white transition-all flex items-center gap-2 shadow-sm self-start sm:self-center"
         >
           <Plus className="w-4 h-4" />
-          <span>New Relationship</span>
+          <span>Add relationship</span>
         </button>
       </div>
 
-      {/* Creation Modal / Inline Drawer */}
-      {isCreatingNew && (
-        <form
-          onSubmit={handleCreateRelationship}
-          className="p-5 rounded-2xl bg-[#170c20] border border-[#d94f6f]/40 space-y-4 animate-fade-in shadow-xl"
-        >
-          <div className="flex items-center justify-between border-b border-[#2d163d] pb-3">
-            <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#d94f6f]" />
-              Establish a New Relationship Framework
-            </h3>
-            <button
-              type="button"
-              onClick={() => setIsCreatingNew(false)}
-              className="text-xs text-[#b59ebf] hover:text-[#fae8d7]"
-            >
-              Cancel
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <div>
-              <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
-                Relationship Label / Name
-              </label>
-              <input
-                type="text"
-                value={newRelName}
-                onChange={e => setNewRelName(e.target.value)}
-                placeholder="e.g. Alex & Jordan"
-                required
-                className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
-                Relationship Structure
-              </label>
-              <select
-                value={newRelStructure}
-                onChange={e => setNewRelStructure(e.target.value as CoreRelationshipStructure)}
-                className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
-              >
-                <option value="monogamous">Monogamous</option>
-                <option value="polyamorous">Polyamorous</option>
-                <option value="open">Open</option>
-                <option value="solo_exploration">Solo Exploration</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
-                Connection Context
-              </label>
-              <select
-                value={newRelContext}
-                onChange={e => setNewRelContext(e.target.value as CoreConnectionContext)}
-                className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
-              >
-                <option value="cohabitating">Cohabitating</option>
-                <option value="nesting">Nesting</option>
-                <option value="long_distance">Long Distance</option>
-                <option value="dating">Dating</option>
-                <option value="occasional">Occasional</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
-                Partner&apos;s Name (Optional)
-              </label>
-              <input
-                type="text"
-                value={newPartnerName}
-                onChange={e => setNewPartnerName(e.target.value)}
-                placeholder="e.g. Jordan"
-                className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-[#d94f6f] hover:bg-[#b83856] text-white transition-colors"
-            >
-              Create Relationship
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Main Split: Relationship List (Left) and Detail (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Relationships List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 bg-[#150a1e] p-1 rounded-xl border border-[#251433] text-[11px] font-semibold">
-              {(['all', 'active', 'paused', 'archived'] as const).map(status => (
+      {/* Main View Switcher: List View vs Focused Detail View */}
+      {viewMode === 'list' ? (
+        <div className="space-y-6">
+          {/* Status Tabs Bar */}
+          <div className="flex items-center justify-between gap-4 flex-wrap border-b border-[#251433] pb-4">
+            <div className="flex items-center gap-1.5 bg-[#150a1e] p-1 rounded-xl border border-[#251433] text-xs font-semibold">
+              {(
+                [
+                  { id: 'active', label: 'Active', count: activeCount },
+                  { id: 'paused', label: 'Paused', count: pausedCount },
+                  { id: 'archived', label: 'Archived', count: archivedCount },
+                  { id: 'all', label: 'All', count: relationships.length }
+                ] as const
+              ).map(tab => (
                 <button
-                  key={status}
-                  onClick={() => setFilterStatus(status)}
-                  className={`px-2 py-1 rounded-lg capitalize transition-colors ${
-                    filterStatus === status
-                      ? 'bg-[#251433] text-[#d94f6f]'
+                  key={tab.id}
+                  onClick={() => setFilterStatus(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg capitalize transition-colors flex items-center gap-1.5 ${
+                    filterStatus === tab.id
+                      ? 'bg-[#251433] text-[#fae8d7] shadow-sm font-bold'
                       : 'text-[#8d7596] hover:text-[#fae8d7]'
                   }`}
                 >
-                  {status}
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      filterStatus === tab.id
+                        ? 'bg-[#d94f6f] text-white'
+                        : 'bg-[#1e1028] text-[#8d7596]'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
                 </button>
               ))}
             </div>
-            <span className="text-xs text-[#8d7596]">{filteredRelationships.length} relationships</span>
+
+            <span className="text-xs text-[#8d7596]">
+              Showing {filteredRelationships.length} of {relationships.length} connections
+            </span>
           </div>
 
-          <div className="space-y-2.5">
-            {filteredRelationships.map(rel => {
-              const isSelected = rel.id === selectedRelationship.id;
-              const dynamicsCount = INITIAL_DYNAMICS.filter(d => d.relationshipId === rel.id).length;
-              return (
-                <div
-                  key={rel.id}
-                  onClick={() => setSelectedRelId(rel.id)}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer select-none ${
-                    isSelected
-                      ? 'bg-[#210f2e] border-[#d94f6f]/60 shadow-md ring-1 ring-[#d94f6f]/40'
-                      : 'bg-[#1c1026] border-[#251433] hover:border-[#3d204f]'
-                  }`}
+          {/* Cards Grid */}
+          {filteredRelationships.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-[#1c1026] border border-[#251433] space-y-3">
+              <Users className="w-8 h-8 text-[#8d7596] mx-auto opacity-40" />
+              <h3 className="text-sm font-bold text-[#fae8d7]">No {filterStatus} relationships found</h3>
+              <p className="text-xs text-[#b59ebf] max-w-sm mx-auto">
+                {filterStatus === 'all'
+                  ? 'Get started by creating your first connection container in Haven.'
+                  : `You currently have no relationships with ${filterStatus} status.`}
+              </p>
+              {filterStatus !== 'all' ? (
+                <button
+                  onClick={() => setFilterStatus('all')}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] transition-colors"
                 >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#d94f6f]">
-                      {formatRelationshipDimensions(rel)}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${
-                        rel.status === 'active'
-                          ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-800/40'
-                          : 'bg-amber-950/70 text-amber-400 border border-amber-800/40'
-                      }`}
-                    >
-                      {rel.status}
-                    </span>
-                  </div>
+                  View all relationships
+                </button>
+              ) : (
+                <button
+                  onClick={handleStartCreate}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#d94f6f] hover:bg-[#b83856] text-white transition-colors"
+                >
+                  Add relationship
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filteredRelationships.map(rel => {
+                const dynamics = getRelationshipDynamics(rel.id);
+                const agreements = getRelationshipAgreements(rel.id);
+                const activity = getRelationshipActivity(rel.id);
+                const latestEvent = activity[0];
 
-                  <h3 className="text-base font-bold text-[#fae8d7]">{rel.name}</h3>
+                return (
+                  <div
+                    key={rel.id}
+                    onClick={() => {
+                      setSelectedRelId(rel.id);
+                      setViewMode('detail');
+                    }}
+                    className="p-5 rounded-2xl bg-[#1c1026] border border-[#251433] hover:border-[#d94f6f]/50 hover:bg-[#20112c] transition-all cursor-pointer flex flex-col justify-between group shadow-sm"
+                  >
+                    <div>
+                      {/* Card Header: Structure & Status */}
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#d94f6f]">
+                          {formatRelationshipStructure(rel.structure)}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                            rel.status === 'active'
+                              ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-800/40'
+                              : rel.status === 'paused'
+                              ? 'bg-amber-950/70 text-amber-400 border border-amber-800/40'
+                              : 'bg-zinc-900 text-zinc-400 border border-zinc-700/40'
+                          }`}
+                        >
+                          {rel.status}
+                        </span>
+                      </div>
 
-                  <div className="mt-2 flex items-center justify-between text-xs text-[#b59ebf]">
-                    <span>{rel.participants.length} Participants</span>
-                    <span>{dynamicsCount} Dynamics</span>
+                      {/* Relationship Name */}
+                      <h3 className="text-lg font-bold text-[#fae8d7] group-hover:text-[#d94f6f] transition-colors">
+                        {rel.name}
+                      </h3>
+
+                      {/* Connection Contexts */}
+                      <p className="text-xs text-[#b59ebf] mt-1">
+                        {formatConnectionContextsList(rel.connectionContexts)}
+                      </p>
+
+                      {/* Participants list */}
+                      <div className="mt-3 flex items-center gap-1.5 text-xs text-[#fae8d7] font-medium bg-[#140a1b] p-2 rounded-xl border border-[#251433]">
+                        <Users className="w-3.5 h-3.5 text-[#d94f6f] shrink-0" />
+                        <span className="truncate">{formatParticipantsSummary(rel.participants)}</span>
+                      </div>
+                    </div>
+
+                    {/* Footer: Metrics and Recent Activity Snippet */}
+                    <div className="mt-5 pt-3 border-t border-[#251433] space-y-2">
+                      <div className="flex items-center justify-between text-xs text-[#8d7596]">
+                        <span>{dynamics.length} Dynamics</span>
+                        <span>•</span>
+                        <span>{agreements.length} Agreements</span>
+                        <span>•</span>
+                        <span>{rel.participants.length} Members</span>
+                      </div>
+
+                      {/* Derived latest activity snippet */}
+                      <div className="flex items-center justify-between text-[11px] text-[#b59ebf]">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Clock className="w-3 h-3 text-[#8d7596] shrink-0" />
+                          <span className="truncate">
+                            {latestEvent
+                              ? `${latestEvent.title} (${formatTimeSnippet(latestEvent.timestamp)})`
+                              : 'No recent activity'}
+                          </span>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-[#d94f6f] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+      ) : (
+        /* Focused Detail View */
+        <div className="space-y-6">
+          {/* Navigation Bar back to List */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setViewMode('list')}
+              className="inline-flex items-center gap-2 text-xs font-semibold text-[#b59ebf] hover:text-[#fae8d7] transition-colors bg-[#1c1026] px-3.5 py-2 rounded-xl border border-[#251433]"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>← Back to all relationships</span>
+            </button>
 
-        {/* Right Column: Selected Relationship Detail View */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
-            {/* Header of Detail */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-[#fae8d7]">{selectedRelationship.name}</h2>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#251433] text-[#d94f6f] font-semibold">
-                    {formatRelationshipDimensions(selectedRelationship)}
+            <span className="text-xs text-[#8d7596]">
+              Last updated {new Date(selectedRelationship.updatedAt).toLocaleDateString()}
+            </span>
+          </div>
+
+          {/* Relationship Header Card */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#251433] text-[#d94f6f] font-semibold">
+                    {formatRelationshipStructure(selectedRelationship.structure)}
                   </span>
+                  <span
+                    className={`text-xs font-bold px-2.5 py-0.5 rounded-full capitalize ${
+                      selectedRelationship.status === 'active'
+                        ? 'bg-emerald-950/70 text-emerald-400 border border-emerald-800/40'
+                        : selectedRelationship.status === 'paused'
+                        ? 'bg-amber-950/70 text-amber-400 border border-amber-800/40'
+                        : 'bg-zinc-900 text-zinc-400 border border-zinc-700/40'
+                    }`}
+                  >
+                    {selectedRelationship.status}
+                  </span>
+                  {selectedRelationship.connectionContexts.map(ctx => (
+                    <span
+                      key={ctx}
+                      className="text-xs px-2 py-0.5 rounded-full bg-[#160b1e] text-[#b59ebf] border border-[#2d163d]"
+                    >
+                      {formatConnectionContext(ctx)}
+                    </span>
+                  ))}
                 </div>
-                <p className="text-xs text-[#b59ebf] mt-1">{selectedRelationship.description}</p>
+
+                <h2 className="text-2xl font-bold text-[#fae8d7]">{selectedRelationship.name}</h2>
+                <p className="text-sm text-[#b59ebf] max-w-2xl">{selectedRelationship.description}</p>
               </div>
 
-              {/* Status Actions */}
-              <div className="flex items-center gap-2">
+              {/* Header Actions: Edit, Pause/Resume, Archive/Restore */}
+              <div className="flex items-center gap-2 flex-wrap self-start">
                 <button
-                  onClick={() =>
-                    handleUpdateStatus(selectedRelationship.status === 'active' ? 'paused' : 'active')
-                  }
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors"
+                  onClick={() => handleOpenEditModal(selectedRelationship)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
                 >
-                  {selectedRelationship.status === 'active' ? 'Pause Dynamic' : 'Resume Active'}
+                  <Pencil className="w-3.5 h-3.5 text-[#b59ebf]" />
+                  <span>Edit</span>
+                </button>
+
+                <button
+                  onClick={() => handleTogglePause(selectedRelationship.id)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+                >
+                  {selectedRelationship.status === 'active' ? (
+                    <>
+                      <Pause className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Pause</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Resume</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleToggleArchive(selectedRelationship.id)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#8d7596] hover:text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+                >
+                  {selectedRelationship.status === 'archived' ? (
+                    <>
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Restore</span>
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="w-3.5 h-3.5" />
+                      <span>Archive</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Participants Matrix */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                <Users className="w-3.5 h-3.5 text-[#d94f6f]" />
-                Participants & Contextual Roles
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {selectedRelationship.participants.map(part => (
-                  <div
-                    key={part.userId}
-                    className="p-3.5 rounded-xl bg-[#130b1a] border border-[#251433] flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-[#fae8d7]">{part.displayName}</span>
-                        {part.userId === CURRENT_USER.id && (
-                          <span className="text-[10px] text-[#d94f6f] font-bold">(You)</span>
-                        )}
-                      </div>
-                      <span className="text-xs text-[#b59ebf] block mt-0.5">
-                        {part.roleDescription || 'Participant'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-[#8d7596]">
-                      Since {new Date(part.joinedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
-                ))}
+          {/* Section 1: Participants */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-[#d94f6f]" />
+                  Participants ({selectedRelationship.participants.length})
+                </h3>
+                <p className="text-xs text-[#b59ebf] mt-0.5">
+                  Consensual members participating in this connection container.
+                </p>
               </div>
+
+              <button
+                onClick={() => setIsAddParticipantOpen(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                <span>Add participant</span>
+              </button>
             </div>
 
-            {/* Associated Dynamics Strip */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {selectedRelationship.participants.map(part => (
+                <div
+                  key={part.userId}
+                  className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-bold text-[#fae8d7]">{part.displayName}</span>
+                      {part.userId === CURRENT_USER.id && (
+                        <span className="text-[10px] text-[#d94f6f] font-bold px-1.5 py-0.5 rounded bg-[#251433]">
+                          (You)
+                        </span>
+                      )}
+                    </div>
+                    {/* Cleanly omitted if no role description exists */}
+                    {part.roleDescription ? (
+                      <span className="text-xs text-[#d94f6f] block font-medium">
+                        {part.roleDescription}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <span className="text-[10px] text-[#8d7596] mt-3 pt-2 border-t border-[#200f2e] block">
+                    Joined{' '}
+                    {new Date(part.joinedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Associated Dynamics */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
                 <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-[#d94f6f]" />
-                  Associated Dynamics ({relDynamics.length})
+                  Associated Dynamics ({currentRelDynamics.length})
                 </h3>
+                <p className="text-xs text-[#b59ebf] mt-0.5">
+                  Consensual practices and protocols active within this relationship.
+                </p>
               </div>
 
-              {relDynamics.length === 0 ? (
-                <div className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
-                  No dynamics established yet for this relationship.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {relDynamics.map(dyn => (
-                    <div
-                      key={dyn.id}
-                      onClick={() => onNavigateDynamic && onNavigateDynamic(dyn.id)}
-                      className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] hover:border-[#d94f6f]/50 transition-all cursor-pointer group flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] font-semibold uppercase text-[#d94f6f]">
-                            {dyn.dynamicType.replace('_', ' ')}
-                          </span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#251433] text-[#fae8d7] capitalize">
-                            {dyn.status}
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-bold text-[#fae8d7] group-hover:text-[#d94f6f] transition-colors">
-                          {dyn.name}
-                        </h4>
-                        <p className="text-xs text-[#b59ebf] line-clamp-2 mt-1">
-                          {dyn.description}
-                        </p>
-                      </div>
-
-                      <div className="mt-3 pt-2 border-t border-[#200f2e] flex items-center justify-between text-xs text-[#8d7596]">
-                        <span>{dyn.activeAgreementsCount} Agreed Boundaries</span>
-                        <span className="text-[#fae8d7] font-semibold group-hover:underline flex items-center gap-1">
-                          <span>Inspect</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {onNavigateTab && (
+                <button
+                  onClick={() => onNavigateTab('dynamics')}
+                  className="text-xs font-semibold text-[#d94f6f] hover:underline flex items-center gap-1"
+                >
+                  <span>Explore dynamics</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
               )}
             </div>
 
-            {/* Active Shared Agreements */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                <Shield className="w-3.5 h-3.5 text-[#d94f6f]" />
-                Relationship Shared Agreements ({relAgreements.length})
-              </h3>
+            {currentRelDynamics.length === 0 ? (
+              <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                <Sparkles className="w-6 h-6 text-[#8d7596] mx-auto opacity-40" />
+                <p className="text-xs font-semibold text-[#fae8d7]">No dynamics yet</p>
+                <p className="text-xs text-[#8d7596] max-w-sm mx-auto">
+                  Dynamics allow you to structure consensual practices, boundaries, and rituals with partners.
+                </p>
+                {onNavigateTab && (
+                  <button
+                    onClick={() => onNavigateTab('dynamics')}
+                    className="mt-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] transition-colors"
+                  >
+                    Explore dynamics
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {currentRelDynamics.map(dyn => (
+                  <div
+                    key={dyn.id}
+                    onClick={() => onNavigateDynamic && onNavigateDynamic(dyn.id)}
+                    className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] hover:border-[#d94f6f]/50 transition-all cursor-pointer group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#d94f6f]">
+                          {dyn.dynamicType.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-[#251433] text-[#fae8d7] capitalize font-medium">
+                          {dyn.status}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-[#fae8d7] group-hover:text-[#d94f6f] transition-colors">
+                        {dyn.name}
+                      </h4>
+                      <p className="text-xs text-[#b59ebf] line-clamp-2 mt-1">
+                        {dyn.description}
+                      </p>
+                    </div>
 
-              <div className="space-y-2">
-                {relAgreements.map(agr => (
+                    <div className="mt-4 pt-2.5 border-t border-[#200f2e] flex items-center justify-between text-xs text-[#8d7596]">
+                      <span>{dyn.participantIds.length} Participants • {dyn.activeAgreementsCount} Agreed Boundaries</span>
+                      <span className="text-[#fae8d7] font-semibold group-hover:underline flex items-center gap-1">
+                        <span>Inspect</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Shared Agreements & Boundaries */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5 text-[#d94f6f]" />
+                  Shared Agreements ({currentRelAgreements.length})
+                </h3>
+                <p className="text-xs text-[#b59ebf] mt-0.5">
+                  {activeAgreementsCount} active agreements • {pendingAgreementsCount} pending review
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsAgreementsNoticeOpen(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+              >
+                <span>View agreements</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {currentRelAgreements.length === 0 ? (
+              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
+                No explicit agreements established for this relationship yet.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {currentRelAgreements.map(agr => (
                   <div
                     key={agr.id}
-                    className="p-3.5 rounded-xl bg-[#130b1a] border border-[#251433] flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    className="p-3.5 rounded-xl bg-[#130b1a] border border-[#251433] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                   >
                     <div>
                       <div className="flex items-center gap-2">
@@ -400,24 +789,589 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                       </div>
                       <p className="text-[11px] text-[#b59ebf] mt-1 max-w-xl">{agr.content}</p>
                     </div>
-                    <span className="text-[10px] font-semibold text-[#d94f6f] px-2 py-0.5 rounded bg-[#251433] shrink-0 self-start sm:self-center">
-                      {formatAgreementScope(agr.scope)}
-                    </span>
+
+                    <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                      <span className="text-[10px] font-semibold text-[#d94f6f] px-2 py-0.5 rounded bg-[#251433]">
+                        {formatAgreementScope(agr.scope)}
+                      </span>
+                      <span className="text-[10px] font-medium text-emerald-400 px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-800/30 capitalize">
+                        {agr.status}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+
+          {/* Section 4: Recent Activity Feed */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div>
+              <h3 className="text-xs font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-[#d94f6f]" />
+                Recent Activity
+              </h3>
+              <p className="text-xs text-[#b59ebf] mt-0.5">
+                Projected timeline derived from check-ins, sessions, rituals, and agreements.
+              </p>
             </div>
 
-            {/* Privacy and Storage Note */}
-            <div className="p-3.5 rounded-xl bg-[#100717] border border-[#251433] text-[11px] text-[#8d7596] flex items-center justify-between">
-              <span>
-                Privacy mode: <strong className="text-[#b59ebf]">Participants only</strong> • Stored in privacy-aware local storage.
-              </span>
-              <span>Updated {new Date(selectedRelationship.updatedAt).toLocaleDateString()}</span>
+            {currentRelActivity.length === 0 ? (
+              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] text-xs text-[#8d7596]">
+                No recent activity recorded for this relationship yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {currentRelActivity.map(event => (
+                  <div
+                    key={event.id}
+                    className="p-3.5 rounded-xl bg-[#130b1a] border border-[#251433] flex items-start gap-3"
+                  >
+                    <div className="p-2 rounded-lg bg-[#251433] text-[#d94f6f] shrink-0 mt-0.5">
+                      {event.type === 'checkin' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      {event.type === 'session' && <Clock className="w-3.5 h-3.5" />}
+                      {event.type === 'ritual' && <Heart className="w-3.5 h-3.5" />}
+                      {event.type === 'agreement' && <Shield className="w-3.5 h-3.5" />}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-[#fae8d7]">{event.title}</span>
+                        <span className="text-[10px] text-[#8d7596]">
+                          {formatTimeSnippet(event.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#b59ebf] mt-0.5">{event.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Privacy Guard Notice */}
+          <div className="p-4 rounded-xl bg-[#100717] border border-[#251433] flex items-start gap-3">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="text-[11px] text-[#8d7596] leading-relaxed">
+              <strong className="text-[#b59ebf]">Privacy Guard:</strong> Relationship metadata and participant settings are preserved in privacy-aware local storage. Sensitive dynamic logs, health alerts, and personal reflections remain isolated and are never shared without explicit consent.
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* 5-Step Creation Wizard Modal */}
+      {isCreatingNew && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-lg rounded-2xl bg-[#170c20] border border-[#d94f6f]/40 p-6 space-y-5 shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-[#2d163d] pb-3">
+              <div>
+                <span className="text-[10px] font-bold text-[#d94f6f] uppercase tracking-wider">
+                  Step {createStep} of 5
+                </span>
+                <h3 className="text-base font-bold text-[#fae8d7] flex items-center gap-2 mt-0.5">
+                  <Sparkles className="w-4 h-4 text-[#d94f6f]" />
+                  Establish New Relationship
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreatingNew(false)}
+                className="text-xs text-[#b59ebf] hover:text-[#fae8d7]"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Step 1: Relationship Name */}
+            {createStep === 1 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-[#fae8d7] block mb-1">
+                    What should you call this relationship?
+                  </label>
+                  <p className="text-[11px] text-[#b59ebf] mb-3">
+                    A clear, recognizable name for this connection container (e.g., &ldquo;Alex &amp; Jordan&rdquo; or &ldquo;The Triad&rdquo;).
+                  </p>
+                  <input
+                    type="text"
+                    value={newRelName}
+                    onChange={e => setNewRelName(e.target.value)}
+                    placeholder="e.g. Alex & Jordan"
+                    autoFocus
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Relationship Structure */}
+            {createStep === 2 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-[#fae8d7] block mb-1">
+                    Relationship Structure
+                  </label>
+                  <p className="text-[11px] text-[#b59ebf] mb-3">
+                    Select the foundational architecture of this connection.
+                  </p>
+                  <div className="space-y-2">
+                    {(
+                      [
+                        { id: 'monogamous', label: 'Monogamous', desc: 'Exclusive relational commitment between two participants.' },
+                        { id: 'polyamorous', label: 'Polyamorous', desc: 'Consensual non-monogamy supporting multiple loving connections.' },
+                        { id: 'open', label: 'Open', desc: 'Committed relationship with openness for external experiences.' },
+                        { id: 'solo_exploration', label: 'Solo Exploration', desc: 'Self-focused dynamic for personal reflection, limits, and growth.' },
+                        { id: 'custom', label: 'Custom', desc: 'Self-defined relationship framework.' }
+                      ] as const
+                    ).map(item => (
+                      <div
+                        key={item.id}
+                        onClick={() => setNewRelStructure(item.id)}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          newRelStructure === item.id
+                            ? 'bg-[#251433] border-[#d94f6f] text-[#fae8d7]'
+                            : 'bg-[#100717] border-[#251433] text-[#b59ebf] hover:border-[#381e47]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#fae8d7]">{item.label}</span>
+                          {newRelStructure === item.id && <Check className="w-3.5 h-3.5 text-[#d94f6f]" />}
+                        </div>
+                        <p className="text-[11px] text-[#8d7596] mt-0.5">{item.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Connection Context (Multi-select) */}
+            {createStep === 3 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-[#fae8d7] block mb-1">
+                    Connection Context (Select all that apply)
+                  </label>
+                  <p className="text-[11px] text-[#b59ebf] mb-3">
+                    The living circumstances or cadence of this relationship.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        { id: 'cohabitating', label: 'Cohabitating' },
+                        { id: 'nesting', label: 'Nesting' },
+                        { id: 'long_distance', label: 'Long-distance' },
+                        { id: 'dating', label: 'Dating' },
+                        { id: 'occasional', label: 'Occasional' },
+                        { id: 'custom', label: 'Custom' }
+                      ] as const
+                    ).map(ctx => {
+                      const isSelected = newRelContexts.includes(ctx.id);
+                      return (
+                        <div
+                          key={ctx.id}
+                          onClick={() => toggleContextSelection(ctx.id, newRelContexts, setNewRelContexts)}
+                          className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-[#251433] border-[#d94f6f] text-[#fae8d7]'
+                              : 'bg-[#100717] border-[#251433] text-[#b59ebf] hover:border-[#381e47]'
+                          }`}
+                        >
+                          <span className="text-xs font-semibold">{ctx.label}</span>
+                          {isSelected && <Check className="w-3 h-3 text-[#d94f6f]" />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Participants */}
+            {createStep === 4 && (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                <div>
+                  <label className="text-xs font-semibold text-[#fae8d7] block mb-1">
+                    Participants
+                  </label>
+                  <p className="text-[11px] text-[#b59ebf] mb-3">
+                    Add the people in this relationship. Contextual roles are optional.
+                  </p>
+
+                  {/* Current User Card */}
+                  <div className="p-3 rounded-xl bg-[#100717] border border-[#251433] mb-3">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#fae8d7] mb-1.5">
+                      <span>{CURRENT_USER.displayName} (You)</span>
+                      <span className="text-[10px] text-[#d94f6f] font-semibold">Initiator</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={newUserRole}
+                      onChange={e => setNewUserRole(e.target.value)}
+                      placeholder="Optional contextual role (e.g. Anchor, Partner)"
+                      className="w-full px-2.5 py-1.5 rounded-lg bg-[#160b1e] border border-[#2d163d] text-[11px] text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                    />
+                  </div>
+
+                  {/* Additional Participants */}
+                  <div className="space-y-2.5">
+                    {additionalParticipants.map((part, idx) => (
+                      <div key={idx} className="p-3 rounded-xl bg-[#100717] border border-[#251433] space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-[#fae8d7]">Member {idx + 2}</span>
+                          {additionalParticipants.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAdditionalParticipants(
+                                  additionalParticipants.filter((_, i) => i !== idx)
+                                )
+                              }
+                              className="text-xs text-rose-400 hover:text-rose-300"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          value={part.displayName}
+                          onChange={e => {
+                            const updated = [...additionalParticipants];
+                            updated[idx].displayName = e.target.value;
+                            setAdditionalParticipants(updated);
+                          }}
+                          placeholder="Display Name"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#160b1e] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                        />
+                        <input
+                          type="text"
+                          value={part.roleDescription || ''}
+                          onChange={e => {
+                            const updated = [...additionalParticipants];
+                            updated[idx].roleDescription = e.target.value;
+                            setAdditionalParticipants(updated);
+                          }}
+                          placeholder="Optional contextual role description"
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-[#160b1e] border border-[#2d163d] text-[11px] text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAdditionalParticipants([
+                        ...additionalParticipants,
+                        { displayName: '', roleDescription: '' }
+                      ])
+                    }
+                    className="mt-3 text-xs font-semibold text-[#d94f6f] hover:underline flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add another participant</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 5: Description & Intentions */}
+            {createStep === 5 && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-[#fae8d7] block mb-1">
+                    Description &amp; Shared Intentions (Optional)
+                  </label>
+                  <p className="text-[11px] text-[#b59ebf] mb-3">
+                    Provide context or notes about this relationship.
+                  </p>
+                  <textarea
+                    rows={4}
+                    value={newRelDescription}
+                    onChange={e => setNewRelDescription(e.target.value)}
+                    placeholder="e.g. Dedicated connection focused on mutual emotional support, intentional communication, and shared practices."
+                    className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f] resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Modal Footer Controls */}
+            <div className="flex items-center justify-between pt-3 border-t border-[#2d163d]">
+              {createStep > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setCreateStep(createStep - 1)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] transition-colors"
+                >
+                  Back
+                </button>
+              ) : (
+                <div />
+              )}
+
+              {createStep < 5 ? (
+                <button
+                  type="button"
+                  disabled={createStep === 1 && !newRelName.trim()}
+                  onClick={() => setCreateStep(createStep + 1)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#d94f6f] hover:bg-[#b83856] text-white disabled:opacity-50 transition-colors"
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleFinishCreate}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-[#d94f6f] hover:bg-[#b83856] text-white transition-colors"
+                >
+                  Create Relationship
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Relationship Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <form
+            onSubmit={handleSaveEdit}
+            className="w-full max-w-lg rounded-2xl bg-[#170c20] border border-[#251433] p-6 space-y-4 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-[#2d163d] pb-3">
+              <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-[#d94f6f]" />
+                Edit Relationship
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-xs text-[#b59ebf] hover:text-[#fae8d7]"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
+                  Relationship Name
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
+                  Relationship Structure
+                </label>
+                <select
+                  value={editStructure}
+                  onChange={e => setEditStructure(e.target.value as CoreRelationshipStructure)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                >
+                  <option value="monogamous">Monogamous</option>
+                  <option value="polyamorous">Polyamorous</option>
+                  <option value="open">Open</option>
+                  <option value="solo_exploration">Solo Exploration</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
+                  Connection Contexts
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      { id: 'cohabitating', label: 'Cohabitating' },
+                      { id: 'nesting', label: 'Nesting' },
+                      { id: 'long_distance', label: 'Long-distance' },
+                      { id: 'dating', label: 'Dating' },
+                      { id: 'occasional', label: 'Occasional' },
+                      { id: 'custom', label: 'Custom' }
+                    ] as const
+                  ).map(ctx => {
+                    const isSelected = editContexts.includes(ctx.id);
+                    return (
+                      <div
+                        key={ctx.id}
+                        onClick={() => toggleContextSelection(ctx.id, editContexts, setEditContexts)}
+                        className={`p-2 rounded-lg border text-xs cursor-pointer flex items-center justify-between ${
+                          isSelected
+                            ? 'bg-[#251433] border-[#d94f6f] text-[#fae8d7]'
+                            : 'bg-[#100717] border-[#251433] text-[#8d7596]'
+                        }`}
+                      >
+                        <span>{ctx.label}</span>
+                        {isSelected && <Check className="w-3 h-3 text-[#d94f6f]" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f] resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
+                  Privacy Level
+                </label>
+                <select
+                  value={editPrivacy}
+                  onChange={e => setEditPrivacy(e.target.value as 'participants_only' | 'private')}
+                  className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                >
+                  <option value="participants_only">Participants Only</option>
+                  <option value="private">Private (Only You)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-[#2d163d]">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-[#d94f6f] hover:bg-[#b83856] text-white transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Add Participant Modal */}
+      {isAddParticipantOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <form
+            onSubmit={handleAddParticipant}
+            className="w-full max-w-sm rounded-2xl bg-[#170c20] border border-[#251433] p-5 space-y-4 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-[#2d163d] pb-2.5">
+              <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-[#d94f6f]" />
+                Add Participant
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddParticipantOpen(false)}
+                className="text-xs text-[#b59ebf] hover:text-[#fae8d7]"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
+                  Participant Display Name
+                </label>
+                <input
+                  type="text"
+                  value={newParticipantName}
+                  onChange={e => setNewParticipantName(e.target.value)}
+                  placeholder="e.g. Jordan"
+                  required
+                  autoFocus
+                  className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
+                  Contextual Role (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newParticipantRole}
+                  onChange={e => setNewParticipantRole(e.target.value)}
+                  placeholder="e.g. Partner, Nesting Partner"
+                  className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#2d163d]">
+              <button
+                type="button"
+                onClick={() => setIsAddParticipantOpen(false)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7]"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-[#d94f6f] hover:bg-[#b83856] text-white"
+              >
+                Add Member
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Phase 4 Agreements Notice Modal */}
+      {isAgreementsNoticeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-[#170c20] border border-[#251433] p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-[#251433] text-[#d94f6f]">
+                <Shield className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#fae8d7]">Agreements &amp; Boundary Management</h3>
+                <span className="text-[10px] text-[#d94f6f] font-semibold uppercase tracking-wider">
+                  Upcoming in Phase 4
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#b59ebf] leading-relaxed">
+              Granular agreement proposal, bilateral negotiation, and boundary revision workflows will be introduced in <strong>Phase 4 — Agreements &amp; Boundaries</strong>.
+            </p>
+
+            <p className="text-xs text-[#8d7596] leading-relaxed">
+              Your current relationship agreements are safely preserved in privacy-aware local storage and displayed here in read-only format.
+            </p>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setIsAgreementsNoticeOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

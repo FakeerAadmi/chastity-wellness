@@ -60,6 +60,38 @@ export const PARTNER_JORDAN: User = {
   createdAt: '2026-02-01T18:00:00Z',
 };
 
+export const PARTNER_MORGAN: User = {
+  id: 'usr_morgan',
+  displayName: 'Morgan',
+  username: 'morgan_creative',
+  pronouns: 'they/them',
+  timezone: 'America/New_York',
+  privacySettings: {
+    profileVisibility: 'relationship_only',
+    allowPartnerLookup: true,
+    maskSensitiveContent: true,
+    stealthDisguise: 'notes',
+    storageType: 'privacy_aware_local_storage',
+  },
+  createdAt: '2026-03-01T10:00:00Z',
+};
+
+export const PARTNER_RILEY: User = {
+  id: 'usr_riley',
+  displayName: 'Riley',
+  username: 'riley_gentle',
+  pronouns: 'she/they',
+  timezone: 'America/New_York',
+  privacySettings: {
+    profileVisibility: 'relationship_only',
+    allowPartnerLookup: true,
+    maskSensitiveContent: false,
+    stealthDisguise: 'calendar',
+    storageType: 'privacy_aware_local_storage',
+  },
+  createdAt: '2026-03-05T14:00:00Z',
+};
+
 /**
  * Example relationships illustrating distinct structures and connection contexts.
  * NOTE: These demonstrate schema flexibility and are not rigid defaults.
@@ -112,6 +144,35 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
     ],
     createdAt: '2026-02-01T18:00:00Z',
     updatedAt: '2026-09-20T10:00:00Z',
+  },
+  {
+    id: 'rel_triad',
+    name: 'Alex, Morgan & Riley',
+    structure: 'polyamorous',
+    connectionContexts: ['dating', 'nesting'],
+    description: 'Egalitarian polyamorous triad focused on mutual domestic care, artistic collaboration, and weekly household check-ins.',
+    status: 'active',
+    privacy: 'participants_only',
+    participants: [
+      {
+        userId: 'usr_alex',
+        displayName: 'Alex',
+        joinedAt: '2026-03-10T12:00:00Z',
+      },
+      {
+        userId: 'usr_morgan',
+        displayName: 'Morgan',
+        joinedAt: '2026-03-10T12:00:00Z',
+        roleDescription: 'Household Coordinator',
+      },
+      {
+        userId: 'usr_riley',
+        displayName: 'Riley',
+        joinedAt: '2026-03-12T15:00:00Z',
+      },
+    ],
+    createdAt: '2026-03-10T12:00:00Z',
+    updatedAt: '2026-09-27T18:00:00Z',
   },
 ];
 
@@ -237,6 +298,27 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
     createdAt: '2026-09-20T14:00:00Z',
     updatedAt: '2026-09-28T19:00:00Z',
   },
+  {
+    id: 'dyn_triad_harmony',
+    relationshipId: 'rel_triad',
+    name: 'Weekly Household & Emotional Sync',
+    dynamicType: 'emotional_intimacy',
+    description: 'Weekly Sunday kitchen table check-in discussing emotional bandwidth, shared meal schedules, and household appreciation.',
+    status: 'active',
+    participantIds: ['usr_alex', 'usr_morgan', 'usr_riley'],
+    toolboxIds: ['tbx_nonviolent_requests'],
+    history: [
+      {
+        timestamp: '2026-03-15T11:00:00Z',
+        action: 'created',
+        actorId: 'usr_morgan',
+        note: 'Household communication ritual established',
+      },
+    ],
+    activeAgreementsCount: 1,
+    createdAt: '2026-03-15T11:00:00Z',
+    updatedAt: '2026-09-27T18:00:00Z',
+  },
 ];
 
 /**
@@ -358,6 +440,35 @@ export const INITIAL_AGREEMENTS: Agreement[] = [
     revisionHistory: [],
     createdAt: '2026-02-10T12:00:00Z',
     updatedAt: '2026-02-12T14:00:00Z',
+  },
+  {
+    id: 'agr_triad_household_calendar',
+    relationshipId: 'rel_triad',
+    dynamicId: 'dyn_triad_harmony',
+    title: 'Shared Household Scheduling & Space Transparency',
+    scope: 'agreement',
+    content: 'All three participants log shared dinner commitments and quiet workspace hours in the communal calendar at least 48 hours in advance.',
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'definitely_interested',
+        respondedAt: '2026-03-12T16:00:00Z',
+      },
+      {
+        participantId: 'usr_morgan',
+        response: 'definitely_interested',
+        respondedAt: '2026-03-12T16:00:00Z',
+      },
+      {
+        participantId: 'usr_riley',
+        response: 'definitely_interested',
+        respondedAt: '2026-03-12T16:00:00Z',
+      },
+    ],
+    status: 'agreed',
+    revisionHistory: [],
+    createdAt: '2026-03-12T16:00:00Z',
+    updatedAt: '2026-03-12T16:00:00Z',
   },
 ];
 
