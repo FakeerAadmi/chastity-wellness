@@ -1,7 +1,8 @@
 import {
   PermissionRequest,
   Relationship,
-  AgreementScope
+  AgreementScope,
+  DynamicPracticeStage
 } from './domain';
 
 /**
@@ -159,5 +160,57 @@ export function formatAgreementScope(scope: AgreementScope): string {
       return 'Active State Protocol';
     default:
       return scope;
+  }
+}
+
+/**
+ * Human-readable display formatting for practice & consent stages.
+ */
+export function formatPracticeStage(stage?: DynamicPracticeStage): string {
+  switch (stage) {
+    case 'interested':
+      return 'Interested in';
+    case 'exploring':
+      return 'Exploring';
+    case 'agreed':
+      return 'Agreed';
+    case 'active':
+      return 'Active';
+    case 'paused':
+      return 'Paused';
+    case 'hard_boundary':
+      return 'Hard boundary';
+    default:
+      return 'Exploring';
+  }
+}
+
+/**
+ * Human-readable display formatting for dynamic types.
+ */
+export function formatDynamicType(type?: string): string {
+  switch (type) {
+    case 'power_exchange':
+      return 'Power Exchange';
+    case 'chastity_practice':
+      return 'Chastity';
+    case 'cuckold_hotwife':
+      return 'Cuckold / Hotwife';
+    case 'bdsm_protocol':
+      return 'BDSM Protocol';
+    case 'sensory_service':
+      return 'Sensory Play';
+    case 'service_oriented':
+      return 'Service';
+    case 'emotional_intimacy':
+      return 'Emotional Intimacy';
+    case 'roleplay_kink':
+      return 'Roleplay & Kink';
+    case 'long_distance':
+      return 'Long Distance';
+    case 'custom':
+      return 'Custom Dynamic';
+    default:
+      return type ? type.replace(/_/g, ' ') : 'Dynamic';
   }
 }

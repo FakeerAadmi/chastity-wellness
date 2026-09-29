@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ShieldAlert, CheckCircle2, Lock, ArrowRight } from 'lucide-react';
 
 export const AgeDisclaimerModal: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    const hasConsented = localStorage.getItem('haven_age_confirmed');
-    if (!hasConsented) {
-      setIsOpen(true);
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !localStorage.getItem('haven_age_confirmed');
     }
-  }, []);
+    return false;
+  });
 
   const handleConfirm = () => {
     localStorage.setItem('haven_age_confirmed', 'true');
@@ -48,7 +46,7 @@ export const AgeDisclaimerModal: React.FC = () => {
 
         <div className="space-y-3.5 text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
           <p>
-            Welcome to <strong>Haven</strong>. This website is a dedicated, medically informed resource focused on sexual wellness, ergonomic device safety, physiological harm reduction, and consensual chastity education.
+            Welcome to <strong>Haven</strong>. Haven is a private platform for consenting adults to explore relationships, dynamics, fantasies, boundaries, and agreements without judgment. Haven provides tools for communication and safety — not instructions for what your relationship should look like.
           </p>
 
           <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700/80 space-y-2 text-xs">

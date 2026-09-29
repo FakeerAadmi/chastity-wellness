@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DEFAULT_USER_PROFILE } from '@/data/defaultProfile';
 import {
   SEXUALITY_OPTIONS,
@@ -28,37 +28,31 @@ import {
   Flame,
   ShieldAlert,
   Download,
-  Calendar,
   MapPin,
   Clock,
   Layers,
   HeartPulse,
-  CheckCircle2,
-  Users,
-  Compass,
-  Plus,
-  Trash2
+  Plus
 } from 'lucide-react';
 
 export const ProfileTab: React.FC = () => {
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('haven_user_profile');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Failed to parse profile', e);
+        }
+      }
+    }
+    return DEFAULT_USER_PROFILE;
+  });
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<'overview' | 'identity' | 'anatomy' | 'kinks' | 'limits'>('overview');
   const [customKinkInput, setCustomKinkInput] = useState('');
-  const [customLimitInput, setCustomLimitInput] = useState('');
-
-  // Load from localStorage if present
-  useEffect(() => {
-    const saved = localStorage.getItem('haven_user_profile');
-    if (saved) {
-      try {
-        setProfile(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse profile', e);
-      }
-    }
-  }, []);
 
   const handleSave = () => {
     localStorage.setItem('haven_user_profile', JSON.stringify(profile));
@@ -125,6 +119,14 @@ export const ProfileTab: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-200">
+      {/* Adult Space Statement */}
+      <div className="p-4 rounded-2xl bg-[#170a20] border border-[#2d163d] flex items-start gap-3">
+        <ShieldCheck className="w-4 h-4 text-[#d94f6f] shrink-0 mt-0.5" />
+        <div className="text-xs text-[#b59ebf] leading-relaxed">
+          <strong className="text-[#fae8d7]">Haven is for consenting adults.</strong> Explore your relationships, dynamics, fantasies, boundaries, and agreements without judgment. Haven provides tools for communication and safety — not instructions for what your relationship should look like.
+        </div>
+      </div>
+
       {/* Profile Header Hero Card */}
       <div className="p-6 sm:p-8 rounded-3xl bg-[#1c1026] border border-[#381e47] shadow-xl relative overflow-hidden space-y-6">
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#d94f6f]/15 to-[#7c3aed]/10 blur-3xl pointer-events-none rounded-full" />
@@ -212,7 +214,7 @@ export const ProfileTab: React.FC = () => {
           </div>
         ) : (
           <p className="text-xs sm:text-sm text-[#fae8d7]/90 leading-relaxed max-w-3xl">
-            "{profile.bio}"
+            &ldquo;{profile.bio}&rdquo;
           </p>
         )}
 
@@ -562,7 +564,7 @@ export const ProfileTab: React.FC = () => {
                 {isEditing ? (
                   <select
                     value={profile.bodyBuild}
-                    onChange={e => setProfile({ ...profile, bodyBuild: e.target.value as any })}
+                    onChange={e => setProfile({ ...profile, bodyBuild: e.target.value as UserProfile['bodyBuild'] })}
                     className="w-full p-2 mt-1 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7]"
                   >
                     <option value="Athletic">Athletic</option>

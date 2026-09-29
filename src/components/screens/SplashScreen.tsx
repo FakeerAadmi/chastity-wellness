@@ -3,16 +3,12 @@
 import React from 'react';
 import {
   Shield,
-  HeartHandshake,
   Sparkles,
   ArrowRight,
   Lock,
   HeartPulse,
-  Users,
-  CheckCircle2,
-  AlertCircle
+  CheckCircle2
 } from 'lucide-react';
-import { MANIFESTO_PILLARS } from '@/data/manifesto';
 
 interface SplashScreenProps {
   onStartOnboarding: () => void;
@@ -40,7 +36,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
               Haven
             </span>
             <span className="text-[11px] text-[#b59ebf] uppercase tracking-wider font-semibold block">
-              Sexual Wellness Sanctuary
+              Private Adult Relationships &amp; Dynamics
             </span>
           </div>
         </div>
@@ -58,18 +54,18 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
       <main className="max-w-4xl w-full mx-auto px-6 py-12 text-center space-y-8 z-10 my-auto">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#251433] border border-[#4a2c59] text-[#fae8d7] text-xs font-medium shadow-inner">
           <Sparkles className="w-3.5 h-3.5 text-[#d94f6f]" />
-          <span>A Safe Space for Consensual Chastity & Intimacy Dynamics</span>
+          <span>A Private Space for Consensual Adult Dynamics &amp; Relationships</span>
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.12]">
-          Intimacy Reimagined Through{' '}
+          Consensual Dynamics Through{' '}
           <span className="bg-gradient-to-r from-[#d94f6f] via-[#ec4899] to-[#c084fc] bg-clip-text text-transparent">
-            Trust, Safety & Consent
+            Trust, Safety &amp; Consent
           </span>
         </h1>
 
         <p className="text-base sm:text-lg text-[#b59ebf] max-w-2xl mx-auto leading-relaxed">
-          Welcome to Haven. We replace taboo and danger with medical harm reduction, ergonomic device guidance, digital lock accountability, and mindful partner intimacy rituals.
+          Welcome to Haven. A private platform for consenting adults to explore fantasies, negotiate boundaries, practice dynamics, and build trust without judgment.
         </p>
 
         {/* Primary Call to Action */}

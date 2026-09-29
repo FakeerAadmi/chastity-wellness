@@ -84,17 +84,75 @@ export interface Relationship {
 }
 
 // ==========================================
-// 3. DYNAMIC
+// 3. DYNAMIC & ADULT EXPRESSION TAXONOMY
 // ==========================================
 export type DynamicStatus = 'exploring' | 'negotiating' | 'active' | 'paused' | 'retired';
+
+/**
+ * Practice & Consent Lifecycle Stages.
+ * Explicitly distinguishes fantasy/interest from active agreement.
+ * An expression of interest or fantasy does NOT imply agreement or consent.
+ * Canonical progression: Interest → Discussion → Boundaries → Agreement → Practice → Review
+ */
+export type DynamicPracticeStage =
+  | 'interested'     // Fantasy or desire a participant is curious about
+  | 'exploring'      // Under active bilateral discussion
+  | 'agreed'         // Explicitly consented to
+  | 'active'         // Currently in live practice
+  | 'paused'         // Temporarily not active
+  | 'hard_boundary'; // Explicitly not acceptable
+
+/**
+ * Adult Expression Taxonomy.
+ * Non-prescriptive, descriptive tags that consenting adults use to define
+ * their consensual relationships and dynamics.
+ */
+export const ADULT_EXPRESSION_TAXONOMY = [
+  'BDSM',
+  'Dominance / Submission',
+  'Power Exchange',
+  'Femdom',
+  'Male Submission',
+  'Chastity',
+  'Orgasm Control',
+  'Teasing',
+  'Cuckold / Hotwife',
+  'Voyeurism',
+  'Exhibitionism',
+  'Roleplay',
+  'Service',
+  'Protocol',
+  'Praise / Degradation',
+  'Pet Play',
+  'Sensory Play',
+  'Impact Play',
+  'Rope / Bondage',
+  'Fetish',
+  'Erotic Roleplay',
+  'Long Distance',
+  'Remote Play',
+  'Open Relationship',
+  'Polyamory',
+  'Non-monogamy',
+  'Jealousy',
+  'Communication',
+  'Rituals',
+  'Aftercare',
+] as const;
+
+export type AdultTaxonomyTag = (typeof ADULT_EXPRESSION_TAXONOMY)[number] | (string & {});
 
 /** Core dynamic types, cleanly separated from extensible identifiers */
 export type CoreDynamicType =
   | 'power_exchange'
-  | 'emotional_intimacy'
+  | 'chastity_practice'
+  | 'cuckold_hotwife'
+  | 'bdsm_protocol'
   | 'sensory_service'
   | 'service_oriented'
-  | 'chastity_practice'
+  | 'emotional_intimacy'
+  | 'roleplay_kink'
+  | 'long_distance'
   | 'custom';
 
 export type DynamicTypeIdentifier = CoreDynamicType | (string & {});
@@ -120,6 +178,10 @@ export interface Dynamic {
   name: string;
   description?: string;
   dynamicType: DynamicTypeIdentifier;
+  /** Descriptive adult expression & dynamic tags (e.g. Chastity, Power Exchange, Long Distance) */
+  tags?: string[];
+  /** Explicit practice & consent stage distinguishing fantasy from agreed practice */
+  practiceStage?: DynamicPracticeStage;
   /** Canonical participant membership list (required) */
   participantIds: string[];
   /** Optional contextual roles (having a role is NOT required to participate) */
@@ -330,7 +392,20 @@ export interface CheckIn {
 // ==========================================
 // 9. TOOLBOX
 // ==========================================
-export type ToolboxCategory = 'relationships' | 'dynamics' | 'safety' | 'wellness' | 'communication';
+export type ToolboxCategory =
+  | 'relationship'
+  | 'communication'
+  | 'bdsm_power_exchange'
+  | 'chastity'
+  | 'non_monogamy'
+  | 'roleplay_kink'
+  | 'long_distance'
+  | 'safety_consent'
+  | 'aftercare_wellness'
+  | 'relationships' // backward compat
+  | 'dynamics'      // backward compat
+  | 'safety'        // backward compat
+  | 'wellness';     // backward compat
 
 export interface Toolbox {
   id: string;
@@ -340,6 +415,8 @@ export interface Toolbox {
   iconName: string;
   requiredFeatures: string[];
   supportedDynamics: string[];
+  /** Explicit adult expression / feature tags */
+  tags?: string[];
   version: string;
   configuration?: Record<string, unknown>;
 }

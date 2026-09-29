@@ -41,7 +41,9 @@ import {
   formatRelationshipStructure,
   formatConnectionContext,
   formatConnectionContextsList,
-  formatAgreementScope
+  formatAgreementScope,
+  formatDynamicType,
+  formatPracticeStage
 } from '../../types/legacyAdapters';
 
 interface RelationshipsTabProps {
@@ -353,7 +355,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#fae8d7]">Relationships</h1>
           <p className="text-sm text-[#b59ebf] mt-1 max-w-xl">
-            The people and connections that matter in your Haven.
+            Explore relationships, dynamics, boundaries, fantasies, and agreements — together.
           </p>
         </div>
 
@@ -720,13 +722,20 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                     className="p-4 rounded-xl bg-[#130b1a] border border-[#251433] hover:border-[#d94f6f]/50 transition-all cursor-pointer group flex flex-col justify-between"
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-[#d94f6f]">
-                          {dyn.dynamicType.replace(/_/g, ' ')}
+                          {formatDynamicType(dyn.dynamicType)}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-[#251433] text-[#fae8d7] capitalize font-medium">
-                          {dyn.status}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {dyn.practiceStage && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#160b1e] border border-[#2d163d] text-[#b59ebf] capitalize font-medium">
+                              {formatPracticeStage(dyn.practiceStage)}
+                            </span>
+                          )}
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-[#251433] text-[#fae8d7] capitalize font-medium">
+                            {dyn.status}
+                          </span>
+                        </div>
                       </div>
                       <h4 className="text-sm font-bold text-[#fae8d7] group-hover:text-[#d94f6f] transition-colors">
                         {dyn.name}
@@ -734,6 +743,20 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                       <p className="text-xs text-[#b59ebf] line-clamp-2 mt-1">
                         {dyn.description}
                       </p>
+
+                      {/* Descriptive Tags */}
+                      {dyn.tags && dyn.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {dyn.tags.map(tag => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5 rounded-md bg-[#160b1e] border border-[#2d163d] text-[10px] font-medium text-[#b59ebf]"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 pt-2.5 border-t border-[#200f2e] flex items-center justify-between text-xs text-[#8d7596]">
