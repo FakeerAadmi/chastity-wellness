@@ -1,154 +1,142 @@
 'use client';
 
 import React from 'react';
-import { Shield, AlertTriangle, BookOpen, MessageSquare, Compass, HeartHandshake } from 'lucide-react';
+import {
+  Shield,
+  Key,
+  Heart,
+  FileSpreadsheet,
+  BookOpen,
+  MessageSquare,
+  AlertTriangle,
+  User,
+  LogOut
+} from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onOpenEmergency: () => void;
   onOpenOnboarding: () => void;
+  onReturnToSplash: () => void;
+  userRole: 'Wearer' | 'Keyholder' | 'Explorer';
+  setUserRole: (role: 'Wearer' | 'Keyholder' | 'Explorer') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
   onOpenEmergency,
-  onOpenOnboarding
+  onOpenOnboarding,
+  onReturnToSplash,
+  userRole,
+  setUserRole
 }) => {
+  const tabs = [
+    { id: 'vault', label: 'Lock Vault', icon: Key },
+    { id: 'rituals', label: 'Dynamic Rituals', icon: Heart },
+    { id: 'boundaries', label: 'Boundary Matrix', icon: FileSpreadsheet },
+    { id: 'guides', label: 'Guides & Sizing', icon: BookOpen },
+    { id: 'community', label: 'Peer Sanctuary', icon: MessageSquare },
+  ];
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-stone-200/80 bg-white/90 backdrop-blur-md dark:border-stone-800 dark:bg-stone-950/90 transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-[#251433] bg-[#0f0714]/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
           <div
-            onClick={() => setActiveTab('home')}
-            className="flex items-center gap-2.5 cursor-pointer group"
+            onClick={onReturnToSplash}
+            className="flex items-center gap-2.5 cursor-pointer group shrink-0"
+            title="Return to Splash Screen"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#d94f6f] to-[#7c3aed] flex items-center justify-center text-white shadow-md shadow-[#d94f6f]/25 group-hover:scale-105 transition-transform">
               <Shield className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg tracking-tight text-stone-900 dark:text-stone-100">
-                  Haven
-                </span>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                  Wellness & Safety
-                </span>
-              </div>
-              <p className="text-xs text-stone-700 dark:text-stone-300 hidden sm:block">
-                Safe, Sane, and Consensual Chastity Education
-              </p>
+              <span className="font-extrabold text-base tracking-tight text-[#fae8d7] block">
+                Haven
+              </span>
+              <span className="text-[10px] text-[#b59ebf] uppercase tracking-wider block font-semibold">
+                Sanctuary
+              </span>
             </div>
           </div>
 
-          {/* Navigation Links */}
+          {/* Navigation Tabs (Desktop) */}
           <nav className="hidden md:flex items-center gap-1">
-            <button
-              onClick={() => setActiveTab('manifesto')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                activeTab === 'manifesto'
-                  ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                  : 'text-stone-700 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-900'
-              }`}
-            >
-              <HeartHandshake className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              Manifesto
-            </button>
-
-            <button
-              onClick={() => setActiveTab('guides')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                activeTab === 'guides'
-                  ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                  : 'text-stone-700 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-900'
-              }`}
-            >
-              <BookOpen className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              Guides & Hygiene
-            </button>
-
-            <button
-              onClick={() => setActiveTab('sizing')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                activeTab === 'sizing'
-                  ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                  : 'text-stone-700 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-900'
-              }`}
-            >
-              <Compass className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              Fit & Sizing Tool
-            </button>
-
-            <button
-              onClick={() => setActiveTab('community')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                activeTab === 'community'
-                  ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                  : 'text-stone-700 hover:text-stone-900 dark:text-stone-300 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-900'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              Community
-            </button>
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    isActive
+                      ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50 shadow-inner'
+                      : 'text-[#b59ebf] hover:text-[#fae8d7] hover:bg-[#1c1026]'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#d94f6f]' : 'text-[#b59ebf]'}`} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-2.5">
-            {/* Urgent Safety Button */}
+          {/* Actions & Role Selector */}
+          <div className="flex items-center gap-3">
+            {/* Perspective Picker */}
+            <div className="hidden sm:flex items-center bg-[#1c1026] p-1 rounded-xl border border-[#381e47] text-[11px] font-semibold">
+              {(['Wearer', 'Keyholder', 'Explorer'] as const).map(role => (
+                <button
+                  key={role}
+                  onClick={() => setUserRole(role)}
+                  className={`px-2 py-0.5 rounded-lg transition-colors ${
+                    userRole === role
+                      ? 'bg-[#251433] text-[#d94f6f] shadow-xs'
+                      : 'text-[#b59ebf] hover:text-[#fae8d7]'
+                  }`}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+
+            {/* Emergency Protocol Button */}
             <button
               onClick={onOpenEmergency}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors shadow-xs"
-              title="Immediate emergency removal, swelling de-escalation, and warning signs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-300 bg-rose-950/60 border border-rose-800/80 hover:bg-rose-900/60 transition-colors shadow-xs"
             >
-              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 animate-pulse" />
-              <span className="hidden sm:inline">Emergency Protocol</span>
-              <span className="sm:hidden">Emergency</span>
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+              <span>Emergency</span>
             </button>
 
-            {/* Guided Onboarding Button */}
+            {/* Exit/Splash Trigger */}
             <button
-              onClick={onOpenOnboarding}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors shadow-sm"
+              onClick={onReturnToSplash}
+              className="p-2 rounded-xl text-[#b59ebf] hover:text-[#fae8d7] hover:bg-[#1c1026] border border-[#381e47] transition-colors"
+              title="Return to Welcome Splash"
             >
-              <span>Self-Assessment</span>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Mobile secondary tab bar */}
-        <div className="flex md:hidden items-center justify-around py-2 border-t border-stone-100 dark:border-stone-900 text-xs">
-          <button
-            onClick={() => setActiveTab('home')}
-            className={`py-1 px-2 rounded ${activeTab === 'home' ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-stone-700 dark:text-stone-300'}`}
-          >
-            Home
-          </button>
-          <button
-            onClick={() => setActiveTab('manifesto')}
-            className={`py-1 px-2 rounded ${activeTab === 'manifesto' ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-stone-700 dark:text-stone-300'}`}
-          >
-            Manifesto
-          </button>
-          <button
-            onClick={() => setActiveTab('guides')}
-            className={`py-1 px-2 rounded ${activeTab === 'guides' ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-stone-700 dark:text-stone-300'}`}
-          >
-            Guides
-          </button>
-          <button
-            onClick={() => setActiveTab('sizing')}
-            className={`py-1 px-2 rounded ${activeTab === 'sizing' ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-stone-700 dark:text-stone-300'}`}
-          >
-            Sizing
-          </button>
-          <button
-            onClick={() => setActiveTab('community')}
-            className={`py-1 px-2 rounded ${activeTab === 'community' ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-stone-700 dark:text-stone-300'}`}
-          >
-            Community
-          </button>
+        {/* Mobile Navigation bar */}
+        <div className="flex md:hidden items-center justify-around py-2 border-t border-[#251433] text-[11px]">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-1 px-2 rounded-lg font-semibold ${
+                activeTab === tab.id ? 'text-[#d94f6f] bg-[#251433]' : 'text-[#b59ebf]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
     </header>
