@@ -60,7 +60,7 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   ],
   safewordRed: 'RED',
   safewordYellow: 'YELLOW',
-  emergencyKeyLocation: 'Tamper-evident sealed security envelope in master bedroom lockbox',
+  emergencyKeyLocation: '[DEMO KEY LOCATION: Sealed envelope in master demo lockbox]',
 
   // Dynamic Statistics
   totalHoursWorn: 348,

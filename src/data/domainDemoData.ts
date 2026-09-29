@@ -3,7 +3,7 @@ import {
   Relationship,
   Dynamic,
   Agreement,
-  DomainPermissionRequest,
+  PermissionRequest,
   Session,
   Ritual,
   CheckIn,
@@ -60,11 +60,16 @@ export const PARTNER_JORDAN: User = {
   createdAt: '2026-02-01T18:00:00Z',
 };
 
+/**
+ * Example relationships illustrating distinct structures and connection contexts.
+ * NOTE: These demonstrate schema flexibility and are not rigid defaults.
+ */
 export const INITIAL_RELATIONSHIPS: Relationship[] = [
   {
     id: 'rel_alex_sam',
     name: 'Alex & Sam',
-    relationshipType: 'Primary Partnership',
+    structure: 'monogamous',
+    connectionContexts: ['cohabitating', 'nesting'],
     description: 'Co-habitating nesting partnership centered on shared vulnerability, gentle discipline, and mutual wellness.',
     status: 'active',
     privacy: 'participants_only',
@@ -73,7 +78,7 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
         userId: 'usr_alex',
         displayName: 'Alex',
         joinedAt: '2026-01-10T12:00:00Z',
-        roleDescription: 'Exploring Partner / Dynamic Focus',
+        roleDescription: 'Exploring Partner',
       },
       {
         userId: 'usr_sam',
@@ -88,7 +93,8 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
   {
     id: 'rel_alex_jordan',
     name: 'Alex & Jordan',
-    relationshipType: 'Long-Distance Dynamic',
+    structure: 'open',
+    connectionContexts: ['long_distance'],
     description: 'Long-distance emotional intimacy and asynchronous reflection rituals across coasts.',
     status: 'active',
     privacy: 'participants_only',
@@ -97,13 +103,11 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
         userId: 'usr_alex',
         displayName: 'Alex',
         joinedAt: '2026-02-01T18:00:00Z',
-        roleDescription: 'Partner',
       },
       {
         userId: 'usr_jordan',
         displayName: 'Jordan',
         joinedAt: '2026-02-01T18:00:00Z',
-        roleDescription: 'Partner & Asynchronous Guide',
       },
     ],
     createdAt: '2026-02-01T18:00:00Z',
@@ -111,6 +115,10 @@ export const INITIAL_RELATIONSHIPS: Relationship[] = [
   },
 ];
 
+/**
+ * Example dynamics demonstrating canonical participant membership,
+ * optional contextual roles, and strict toolbox/history tracking.
+ */
 export const INITIAL_DYNAMICS: Dynamic[] = [
   {
     id: 'dyn_chastity_wellness',
@@ -119,6 +127,7 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
     dynamicType: 'chastity_practice',
     description: 'Structured physical and mental focus practice with emphasis on skin hygiene, daily checks, and safe keys.',
     status: 'active',
+    participantIds: ['usr_alex', 'usr_sam'],
     participantRoles: [
       {
         userId: 'usr_alex',
@@ -135,6 +144,15 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
         canModifyAgreements: true,
       },
     ],
+    toolboxIds: ['tbx_chastity_vault', 'tbx_hygiene_guides'],
+    history: [
+      {
+        timestamp: '2026-01-18T10:00:00Z',
+        action: 'created',
+        actorId: 'usr_alex',
+        note: 'Dynamic initiated with mutual consent',
+      },
+    ],
     activeAgreementsCount: 4,
     createdAt: '2026-01-18T10:00:00Z',
     updatedAt: '2026-09-29T10:00:00Z',
@@ -146,6 +164,7 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
     dynamicType: 'power_exchange',
     description: 'Consensual service and devotion dynamic active exclusively from Friday 18:00 through Sunday 20:00.',
     status: 'active',
+    participantIds: ['usr_alex', 'usr_sam'],
     participantRoles: [
       {
         userId: 'usr_alex',
@@ -162,6 +181,15 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
         canModifyAgreements: true,
       },
     ],
+    toolboxIds: ['tbx_rituals_engine', 'tbx_aftercare_debrief'],
+    history: [
+      {
+        timestamp: '2026-02-15T15:00:00Z',
+        action: 'created',
+        actorId: 'usr_sam',
+        note: 'Weekend protocol established',
+      },
+    ],
     activeAgreementsCount: 3,
     createdAt: '2026-02-15T15:00:00Z',
     updatedAt: '2026-09-25T11:00:00Z',
@@ -171,22 +199,17 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
     relationshipId: 'rel_alex_jordan',
     name: 'Evening Connection & Reflections',
     dynamicType: 'emotional_intimacy',
-    description: 'Structured evening check-in questions and weekly audio letter exchanges.',
+    description: 'Structured evening check-in questions and weekly reflection exchanges. Equal partners without asymmetric roles.',
     status: 'active',
-    participantRoles: [
+    participantIds: ['usr_alex', 'usr_jordan'],
+    // Note: No asymmetric participantRoles defined, demonstrating roles are not required
+    toolboxIds: ['tbx_nonviolent_requests'],
+    history: [
       {
-        userId: 'usr_alex',
-        roleTitle: 'Partner',
-        canApprovePermissions: true,
-        canInitiateSessions: true,
-        canModifyAgreements: true,
-      },
-      {
-        userId: 'usr_jordan',
-        roleTitle: 'Partner',
-        canApprovePermissions: true,
-        canInitiateSessions: true,
-        canModifyAgreements: true,
+        timestamp: '2026-02-10T12:00:00Z',
+        action: 'created',
+        actorId: 'usr_jordan',
+        note: 'Bicoastal connection established',
       },
     ],
     activeAgreementsCount: 2,
@@ -200,20 +223,14 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
     dynamicType: 'sensory_service',
     description: 'Exploring sensory stillness, blindfolds, and audio soundscapes during evening unwind periods.',
     status: 'exploring',
-    participantRoles: [
+    participantIds: ['usr_alex', 'usr_sam'],
+    toolboxIds: [],
+    history: [
       {
-        userId: 'usr_alex',
-        roleTitle: 'Receiver',
-        canApprovePermissions: false,
-        canInitiateSessions: false,
-        canModifyAgreements: true,
-      },
-      {
-        userId: 'usr_sam',
-        roleTitle: 'Facilitator',
-        canApprovePermissions: true,
-        canInitiateSessions: true,
-        canModifyAgreements: true,
+        timestamp: '2026-09-20T14:00:00Z',
+        action: 'created',
+        actorId: 'usr_alex',
+        note: 'Exploratory dynamic drafted',
       },
     ],
     activeAgreementsCount: 1,
@@ -222,20 +239,44 @@ export const INITIAL_DYNAMICS: Dynamic[] = [
   },
 ];
 
+/**
+ * Strict Agreements keeping scopes, negotiation responses, and consent status separate.
+ */
 export const INITIAL_AGREEMENTS: Agreement[] = [
   {
     id: 'agr_daily_hygiene',
     relationshipId: 'rel_alex_sam',
     dynamicId: 'dyn_chastity_wellness',
     title: 'Daily Hygiene & Device Inspection',
-    description: 'Physical inspection and cleaning must occur at least once every 24 hours. The wear session is paused immediately if any skin erythema or pinching occurs.',
-    category: 'safety_boundary',
-    negotiationStatus: 'agreed',
-    enforcementMode: 'self_enforced',
-    version: 2,
-    proposedBy: 'usr_sam',
-    agreedBy: ['usr_alex', 'usr_sam'],
-    agreedAt: '2026-01-20T11:00:00Z',
+    scope: 'boundary',
+    content: 'Physical inspection and cleaning must occur at least once every 24 hours. The wear session is paused immediately if any skin erythema or pinching occurs.',
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'definitely_interested',
+        respondedAt: '2026-01-20T11:00:00Z',
+      },
+      {
+        participantId: 'usr_sam',
+        response: 'definitely_interested',
+        respondedAt: '2026-01-20T11:00:00Z',
+      },
+    ],
+    status: 'agreed',
+    revisionHistory: [
+      {
+        revisionId: 'rev_1',
+        text: 'Initial hygiene requirement',
+        revisedAt: '2026-01-18T10:00:00Z',
+        revisedBy: 'usr_sam',
+      },
+      {
+        revisionId: 'rev_2',
+        text: 'Added mandatory immediate pause condition on skin erythema',
+        revisedAt: '2026-08-15T10:00:00Z',
+        revisedBy: 'usr_alex',
+      },
+    ],
     createdAt: '2026-01-18T10:00:00Z',
     updatedAt: '2026-08-15T10:00:00Z',
   },
@@ -244,14 +285,29 @@ export const INITIAL_AGREEMENTS: Agreement[] = [
     relationshipId: 'rel_alex_sam',
     dynamicId: 'dyn_chastity_wellness',
     title: 'Zero-Penalty Safeword Protocol',
-    description: 'Calling "Red" or using the physical key vault incurs absolutely no guilt, shame, or relationship penalty. Safety and bodily integrity remain unconditionally paramount.',
-    category: 'safety_boundary',
-    negotiationStatus: 'agreed',
-    enforcementMode: 'self_enforced',
-    version: 1,
-    proposedBy: 'usr_alex',
-    agreedBy: ['usr_alex', 'usr_sam'],
-    agreedAt: '2026-01-19T09:00:00Z',
+    scope: 'rule',
+    content: 'Calling "Red" or using the physical key vault incurs absolutely no guilt, shame, or relationship penalty. Safety and bodily integrity remain unconditionally paramount.',
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'definitely_interested',
+        respondedAt: '2026-01-19T09:00:00Z',
+      },
+      {
+        participantId: 'usr_sam',
+        response: 'definitely_interested',
+        respondedAt: '2026-01-19T09:00:00Z',
+      },
+    ],
+    status: 'agreed',
+    revisionHistory: [
+      {
+        revisionId: 'rev_1',
+        text: 'Initial safeword agreement',
+        revisedAt: '2026-01-18T10:00:00Z',
+        revisedBy: 'usr_alex',
+      },
+    ],
     createdAt: '2026-01-18T10:00:00Z',
     updatedAt: '2026-01-19T09:00:00Z',
   },
@@ -260,14 +316,22 @@ export const INITIAL_AGREEMENTS: Agreement[] = [
     relationshipId: 'rel_alex_sam',
     dynamicId: 'dyn_weekend_power_exchange',
     title: 'Evening Digital Curfew & Ritual',
-    description: 'Phones down at 22:00 on Friday & Saturday for 30 minutes of intentional dialogue and physical touch.',
-    category: 'protocol',
-    negotiationStatus: 'agreed',
-    enforcementMode: 'partner_supervised',
-    version: 1,
-    proposedBy: 'usr_sam',
-    agreedBy: ['usr_alex', 'usr_sam'],
-    agreedAt: '2026-02-16T12:00:00Z',
+    scope: 'agreement',
+    content: 'Phones down at 22:00 on Friday & Saturday for 30 minutes of intentional dialogue and physical touch.',
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'interested',
+        respondedAt: '2026-02-16T12:00:00Z',
+      },
+      {
+        participantId: 'usr_sam',
+        response: 'definitely_interested',
+        respondedAt: '2026-02-16T12:00:00Z',
+      },
+    ],
+    status: 'agreed',
+    revisionHistory: [],
     createdAt: '2026-02-15T15:00:00Z',
     updatedAt: '2026-02-16T12:00:00Z',
   },
@@ -276,30 +340,49 @@ export const INITIAL_AGREEMENTS: Agreement[] = [
     relationshipId: 'rel_alex_jordan',
     dynamicId: 'dyn_asynch_reflection',
     title: 'Three Asynchronous Touchpoints per Week',
-    description: 'Sharing at least one reflective voice memo or written prompt answer on Tuesday, Thursday, and Sunday.',
-    category: 'custom',
-    negotiationStatus: 'agreed',
-    enforcementMode: 'self_enforced',
-    version: 1,
-    proposedBy: 'usr_jordan',
-    agreedBy: ['usr_alex', 'usr_jordan'],
-    agreedAt: '2026-02-12T14:00:00Z',
+    scope: 'agreement',
+    content: 'Sharing at least one reflective voice memo or written prompt answer on Tuesday, Thursday, and Sunday.',
+    participantResponses: [
+      {
+        participantId: 'usr_alex',
+        response: 'interested',
+        respondedAt: '2026-02-12T14:00:00Z',
+      },
+      {
+        participantId: 'usr_jordan',
+        response: 'definitely_interested',
+        respondedAt: '2026-02-12T14:00:00Z',
+      },
+    ],
+    status: 'agreed',
+    revisionHistory: [],
     createdAt: '2026-02-10T12:00:00Z',
     updatedAt: '2026-02-12T14:00:00Z',
   },
 ];
 
-export const INITIAL_PERMISSION_REQUESTS: DomainPermissionRequest[] = [
+/**
+ * Strict canonical Permission Requests.
+ */
+export const INITIAL_PERMISSION_REQUESTS: PermissionRequest[] = [
   {
     id: 'req_weekend_protocol_extension',
-    dynamicId: 'dyn_weekend_power_exchange',
     relationshipId: 'rel_alex_sam',
-    requestedBy: 'usr_alex',
-    assignedTo: 'usr_sam',
+    dynamicId: 'dyn_weekend_power_exchange',
+    requesterId: 'usr_alex',
+    recipientIds: ['usr_sam'],
+    requestType: 'activity_extension',
     title: 'Request: Extend Sunday Evening Ritual by 1 Hour',
     description: 'Alex requested to extend the quiet tea and massage ritual until 21:00 before transitioning back into work week mode.',
     status: 'pending',
-    type: 'activity',
+    history: [
+      {
+        timestamp: '2026-09-29T17:30:00Z',
+        action: 'requested',
+        actorId: 'usr_alex',
+        note: 'Submitted through dynamic request desk',
+      },
+    ],
     createdAt: '2026-09-29T17:30:00Z',
     updatedAt: '2026-09-29T17:30:00Z',
   },
@@ -376,6 +459,9 @@ export const INITIAL_CHECKINS: CheckIn[] = [
   },
 ];
 
+/**
+ * Generic Session instance with extension/dynamic details isolated in metadata.
+ */
 export const INITIAL_SESSIONS: Session[] = [
   {
     id: 'ses_active_chastity',
@@ -391,9 +477,12 @@ export const INITIAL_SESSIONS: Session[] = [
       {
         timestamp: '2026-09-28T10:00:00Z',
         reportedBy: 'usr_alex',
-        comfortLevel: 5,
-        skinIntegrityOk: true,
-        notes: 'Skin healthy, no chafing.',
+        comfortScore: 5,
+        note: 'Skin healthy, no chafing.',
+        metadata: {
+          inspectionCompleted: true,
+          hygieneRoutineDone: true,
+        },
       },
     ],
     emotionalCheckIns: [
@@ -404,11 +493,18 @@ export const INITIAL_SESSIONS: Session[] = [
         connectionLevel: 5,
       },
     ],
+    metadata: {
+      practiceArchetype: 'chastity_practice',
+      lockType: 'digital_timer_vault',
+    },
     createdAt: '2026-09-27T10:00:00Z',
     updatedAt: '2026-09-28T18:00:00Z',
   },
 ];
 
+/**
+ * Safety plan utilizing explicitly synthetic placeholders for security locations.
+ */
 export const INITIAL_SAFETY_PLAN: SafetyPlan = {
   id: 'saf_alex_primary',
   userId: 'usr_alex',
@@ -418,9 +514,9 @@ export const INITIAL_SAFETY_PLAN: SafetyPlan = {
     { word: 'Amber / Yellow', meaning: 'slow_down_checkin' },
     { word: 'Green', meaning: 'praise_continue' },
   ],
-  emergencyPhysicalKeyLocation: 'Nightstand lockbox (code 4821) and duplicate sealed with trusted emergency contact.',
-  emergencyRemovalToolLocation: 'Bathroom medicine cabinet, top right shelf (bolt cutter and silicone shears).',
-  emergencyInstructions: 'Call 911 or visit urgent care immediately if swelling, discoloration, or numbness persists beyond 10 minutes after release.',
+  emergencyPhysicalKeyLocation: '[DEMO KEYBOX LOCATION: Master lockbox in primary safe #1 - demo only]',
+  emergencyRemovalToolLocation: '[DEMO TOOL LOCATION: Medical/emergency kit top shelf - demo only]',
+  emergencyInstructions: '[DEMO EMERGENCY PROTOCOL: Seek medical assistance immediately if numbness, discoloration, or acute distress occurs]',
   isolatedHealthAlerts: [],
   createdAt: '2026-01-15T09:00:00Z',
   updatedAt: '2026-08-20T14:00:00Z',

@@ -312,7 +312,7 @@ export const RitualsTab: React.FC = () => {
           <span>The Aftercare & Debrief Protocol (Post-Unlock)</span>
         </div>
         <p className="text-[#b59ebf] leading-relaxed">
-          Following release or unlocking, both wearers and keyholders often experience dopamine depletion ("drop"). Use this 3-question debrief:
+          Following release or unlocking, both wearers and keyholders often experience dopamine depletion (&quot;drop&quot;). Use this 3-question debrief:
         </p>
         <ul className="space-y-1.5 list-disc list-inside text-[#fae8d7]/90 pl-1">
           <li><strong>Physical Inspection:</strong> Did any pinch point or friction area develop that requires healing time?</li>

@@ -10,21 +10,17 @@ import {
   Heart,
   FileCheck,
   MessageSquare,
-  Clock,
   CheckCircle2,
-  Users,
-  Compass,
-  AlertTriangle,
   ChevronRight
 } from 'lucide-react';
 import {
   INITIAL_DYNAMICS,
   INITIAL_RELATIONSHIPS,
   INITIAL_AGREEMENTS,
-  INITIAL_PERMISSION_REQUESTS,
   CURRENT_USER
 } from '../../data/domainDemoData';
-import { Dynamic, DynamicStatus, DynamicType } from '../../types/domain';
+import { Dynamic, DynamicStatus, CoreDynamicType } from '../../types/domain';
+import { formatAgreementScope } from '../../types/legacyAdapters';
 import { VaultTab } from './VaultTab';
 import { RitualsTab } from './RitualsTab';
 import { CouplesDynamicsTab } from './CouplesDynamicsTab';
@@ -48,7 +44,7 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
   // Dynamic creation state
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newType, setNewType] = useState<DynamicType>('power_exchange');
+  const [newType, setNewType] = useState<CoreDynamicType>('power_exchange');
   const [newDesc, setNewDesc] = useState('');
   const [newRelId, setNewRelId] = useState(INITIAL_RELATIONSHIPS[0]?.id || '');
 
@@ -67,6 +63,7 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
       dynamicType: newType,
       description: newDesc.trim() || 'Custom relationship dynamic in Haven.',
       status: 'active',
+      participantIds: [CURRENT_USER.id],
       participantRoles: [
         {
           userId: CURRENT_USER.id,
@@ -74,6 +71,15 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
           canApprovePermissions: true,
           canInitiateSessions: true,
           canModifyAgreements: true,
+        },
+      ],
+      toolboxIds: [],
+      history: [
+        {
+          timestamp: new Date().toISOString(),
+          action: 'created',
+          actorId: CURRENT_USER.id,
+          note: 'Dynamic initiated',
         },
       ],
       activeAgreementsCount: 0,
@@ -185,7 +191,7 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
               </label>
               <select
                 value={newType}
-                onChange={e => setNewType(e.target.value as DynamicType)}
+                onChange={e => setNewType(e.target.value as CoreDynamicType)}
                 className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
               >
                 <option value="power_exchange">Power Exchange (D/s)</option>
@@ -256,7 +262,7 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#d94f6f]">
-                        {(dyn.dynamicType || dyn.category || 'Dynamic').replace('_', ' ')}
+                        {dyn.dynamicType.replace('_', ' ')}
                       </span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#251433] text-[#fae8d7] capitalize font-medium">
                         {dyn.status}
@@ -293,7 +299,7 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#251433] text-[#d94f6f]">
-                    {(selectedDynamic.dynamicType || selectedDynamic.category || 'Dynamic').replace('_', ' ')}
+                    {selectedDynamic.dynamicType.replace('_', ' ')}
                   </span>
                   <span className="text-xs text-[#b59ebf]">
                     Relationship: <strong className="text-[#fae8d7]">{selectedRel?.name}</strong>
@@ -391,15 +397,15 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
                           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                           <h4 className="text-sm font-semibold text-[#fae8d7]">{agr.title}</h4>
                           <span className="text-[10px] uppercase font-bold text-[#d94f6f] px-1.5 py-0.5 rounded bg-[#251433]">
-                            {(agr.category || agr.scope || 'protocol').replace('_', ' ')}
+                            {formatAgreementScope(agr.scope)}
                           </span>
                         </div>
-                        <p className="text-xs text-[#b59ebf] leading-relaxed max-w-2xl">{agr.description}</p>
+                        <p className="text-xs text-[#b59ebf] leading-relaxed max-w-2xl">{agr.content}</p>
                       </div>
 
                       <div className="text-right shrink-0">
                         <span className="text-[10px] text-[#8d7596] block">
-                          Agreed on {new Date(agr.agreedAt || agr.createdAt).toLocaleDateString()}
+                          Agreed on {new Date(agr.createdAt).toLocaleDateString()}
                         </span>
                         <span className="text-[10px] text-emerald-400 font-semibold block mt-0.5">
                           ✓ Signed by both

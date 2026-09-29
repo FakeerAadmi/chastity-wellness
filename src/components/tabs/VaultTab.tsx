@@ -24,7 +24,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({ onOpenEmergency }) => {
   // Lock state
   const [isLocked, setIsLocked] = useState<boolean>(true);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(43200); // 12 hours
-  const [combinationCode, setCombinationCode] = useState<string>('4821');
+  const [combinationCode, setCombinationCode] = useState<string>('[DEMO-0000]');
   const [isCombinationRevealed, setIsCombinationRevealed] = useState<boolean>(false);
   const [isHygieneFrozen, setIsHygieneFrozen] = useState<boolean>(false);
   const [hygieneFreezeSeconds, setHygieneFreezeSeconds] = useState<number>(2700); // 45 min

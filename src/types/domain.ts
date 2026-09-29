@@ -37,22 +37,44 @@ export interface User {
 }
 
 // ==========================================
-// 2. RELATIONSHIP
+// 2. RELATIONSHIP DIMENSIONS
 // ==========================================
 export type RelationshipStatus = 'active' | 'paused' | 'archived';
+
+/** Core relationship structures, cleanly separated from extensible identifiers */
+export type CoreRelationshipStructure =
+  | 'monogamous'
+  | 'polyamorous'
+  | 'open'
+  | 'solo_exploration'
+  | 'custom';
+
+export type RelationshipStructureIdentifier = CoreRelationshipStructure | (string & {});
+
+/** Core connection contexts, cleanly separated from structure and dynamics */
+export type CoreConnectionContext =
+  | 'cohabitating'
+  | 'nesting'
+  | 'long_distance'
+  | 'dating'
+  | 'occasional'
+  | 'custom';
+
+export type ConnectionContextIdentifier = CoreConnectionContext | (string & {});
 
 export interface RelationshipParticipant {
   userId: string;
   displayName: string;
   joinedAt: string;
-  roleDescription?: string; // Contextual, not a rigid global enum
+  roleDescription?: string; // Contextual note, not an asymmetric requirement
 }
 
 export interface Relationship {
   id: string;
   name: string;
+  structure: RelationshipStructureIdentifier;
+  connectionContexts: ConnectionContextIdentifier[];
   participants: RelationshipParticipant[];
-  relationshipType: string; // Extensible (e.g., 'primary', 'long_distance', 'power_exchange', 'polyamorous', 'casual', 'custom')
   description?: string;
   status: RelationshipStatus;
   privacy: 'private' | 'participants_only';
@@ -65,7 +87,17 @@ export interface Relationship {
 // 3. DYNAMIC
 // ==========================================
 export type DynamicStatus = 'exploring' | 'negotiating' | 'active' | 'paused' | 'retired';
-export type DynamicType = 'chastity_practice' | 'power_exchange' | 'sensory_service' | 'emotional_intimacy' | 'service_oriented' | 'custom' | string;
+
+/** Core dynamic types, cleanly separated from extensible identifiers */
+export type CoreDynamicType =
+  | 'power_exchange'
+  | 'emotional_intimacy'
+  | 'sensory_service'
+  | 'service_oriented'
+  | 'chastity_practice'
+  | 'custom';
+
+export type DynamicTypeIdentifier = CoreDynamicType | (string & {});
 
 export interface DynamicParticipantRole {
   userId: string;
@@ -87,16 +119,19 @@ export interface Dynamic {
   relationshipId: string;
   name: string;
   description?: string;
-  category?: string;
-  dynamicType?: DynamicType;
-  participantIds?: string[];
+  dynamicType: DynamicTypeIdentifier;
+  /** Canonical participant membership list (required) */
+  participantIds: string[];
+  /** Optional contextual roles (having a role is NOT required to participate) */
   participantRoles?: DynamicParticipantRole[];
   status: DynamicStatus;
   startDate?: string;
   endDate?: string;
-  toolboxIds?: string[];
+  /** Active toolboxes plugged into this dynamic (empty array valid) */
+  toolboxIds: string[];
+  /** Chronological history of dynamic lifecycle changes (empty array valid) */
+  history: DynamicHistoryEntry[];
   activeAgreementsCount?: number;
-  history?: DynamicHistoryEntry[];
   createdAt: string;
   updatedAt: string;
 }
@@ -104,9 +139,28 @@ export interface Dynamic {
 // ==========================================
 // 4. AGREEMENT & NEGOTIATION
 // ==========================================
-export type AgreementScope = 'interest' | 'boundary' | 'agreement' | 'rule' | 'active_state' | 'safety_boundary' | 'protocol' | 'custom';
-export type ConsentStatus = 'agreed' | 'pending' | 'declined' | 'paused' | 'revoked' | 'expired';
-export type NegotiationResponse = 'definitely_interested' | 'interested' | 'maybe' | 'unsure' | 'not_interested' | 'hard_boundary';
+export type AgreementScope =
+  | 'interest'
+  | 'boundary'
+  | 'agreement'
+  | 'rule'
+  | 'active_state';
+
+export type ConsentStatus =
+  | 'agreed'
+  | 'pending'
+  | 'declined'
+  | 'paused'
+  | 'revoked'
+  | 'expired';
+
+export type NegotiationResponse =
+  | 'definitely_interested'
+  | 'interested'
+  | 'maybe'
+  | 'unsure'
+  | 'not_interested'
+  | 'hard_boundary';
 
 export interface AgreementParticipantResponse {
   participantId: string;
@@ -128,21 +182,13 @@ export interface Agreement {
   dynamicId: string;
   relationshipId: string;
   title: string;
-  scope?: AgreementScope;
-  category?: string;
-  content?: string;
-  description?: string;
-  participantResponses?: AgreementParticipantResponse[];
-  status?: ConsentStatus;
-  negotiationStatus?: string;
-  enforcementMode?: string;
-  proposedBy?: string;
-  agreedBy?: string[];
-  agreedAt?: string;
-  version?: number;
+  scope: AgreementScope;
+  content: string;
+  participantResponses: AgreementParticipantResponse[];
+  status: ConsentStatus;
   effectiveFrom?: string;
   expiresAt?: string;
-  revisionHistory?: AgreementRevision[];
+  revisionHistory: AgreementRevision[];
   revokedAt?: string;
   revocationReason?: string;
   createdAt: string;
@@ -150,7 +196,7 @@ export interface Agreement {
 }
 
 // ==========================================
-// 5. PERMISSION REQUEST
+// 5. PERMISSION REQUEST (Canonical Model)
 // ==========================================
 export type PermissionRequestStatus = 'pending' | 'approved' | 'declined' | 'withdrawn' | 'expired';
 
@@ -161,42 +207,37 @@ export interface PermissionRequestHistory {
   note?: string;
 }
 
-export interface DomainPermissionRequest {
+export interface PermissionRequest {
   id: string;
-  requesterId?: string;
-  requestedBy?: string;
-  recipientIds?: string[];
-  assignedTo?: string;
+  requesterId: string;
+  recipientIds: string[];
   relationshipId: string;
   dynamicId: string;
-  requestType?: string;
-  type?: string;
+  requestType: string;
   title: string;
   description?: string;
   conditions?: string;
   durationMinutes?: number;
-  status: PermissionRequestStatus | 'rejected';
+  status: PermissionRequestStatus;
   responseNote?: string;
   expiresAt?: string;
-  history?: PermissionRequestHistory[];
+  history: PermissionRequestHistory[];
   createdAt: string;
   updatedAt: string;
 }
 
 // ==========================================
-// 6. SESSION
+// 6. GENERIC SESSION MODEL
+// Reusable across dynamics (rituals, intimacy, communication, wellness, power exchange)
 // ==========================================
 export type SessionStatus = 'planned' | 'active' | 'paused' | 'completed' | 'cancelled';
 
 export interface SessionWellnessEntry {
   timestamp: string;
   reportedBy: string;
-  circulationStatus?: 'normal' | 'pressure' | 'numb_alert';
-  skinCondition?: 'intact' | 'redness' | 'irritation_alert';
-  comfortScore?: number;
-  comfortLevel?: number;
-  skinIntegrityOk?: boolean;
-  notes?: string;
+  comfortScore?: number; // 1-5 generic comfort score
+  note?: string;
+  metadata?: Record<string, unknown>; // Extension-specific or dynamic-specific physiological notes
 }
 
 export interface SessionEmotionalEntry {
@@ -231,6 +272,8 @@ export interface Session {
   emotionalCheckIns: SessionEmotionalEntry[];
   aftercare?: SessionAftercare;
   notes?: string;
+  /** Dynamic-specific or extension-specific metadata (keeps Session generic) */
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -377,7 +420,7 @@ export interface CommunityComment {
   id: string;
   postId: string;
   authorPseudonym: string;
-  authorBadge?: string; // Non-clinical badge (e.g. 'Community Member', 'Experienced Practitioner')
+  authorBadge?: string;
   content: string;
   isHelpfulAdvice: boolean;
   createdAt: string;
@@ -388,10 +431,10 @@ export interface CommunityPost {
   title: string;
   content: string;
   authorPseudonym: string;
-  authorRoleDescriptor?: string; // Contextual role descriptor
+  authorRoleDescriptor?: string;
   categoryTag: string;
   tags: string[];
-  contentWarning?: string; // For responsible community disclosure
+  contentWarning?: string;
   sourceProvenance?: 'personal_experience' | 'peer_discussion' | 'educational_reference';
   upvotesCount: number;
   commentsCount: number;

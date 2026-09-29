@@ -11,8 +11,6 @@ import {
   ArrowRight,
   Send,
   Lock,
-  Calendar,
-  MessageSquare,
   Users,
   Compass,
   Check
@@ -73,7 +71,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   };
 
   // Quick permission approval / resolution
-  const handleResolveRequest = (id: string, status: 'approved' | 'rejected') => {
+  const handleResolveRequest = (id: string, status: 'approved' | 'declined') => {
     setPendingRequests(prev =>
       prev.map(req => (req.id === id ? { ...req, status } : req))
     );
@@ -173,10 +171,10 @@ export const TodayTab: React.FC<TodayTabProps> = ({
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#d94f6f]/15 text-[#d94f6f] border border-[#d94f6f]/30 uppercase tracking-wider">
-                        {req.type} Request
+                        {req.requestType.replace('_', ' ')}
                       </span>
                       <span className="text-xs text-[#b59ebf]">
-                        from {req.requestedBy === CURRENT_USER.id ? 'You' : 'Partner'}
+                        from {req.requesterId === CURRENT_USER.id ? 'You' : 'Partner'}
                       </span>
                     </div>
                     <h3 className="text-sm font-semibold text-[#fae8d7]">{req.title}</h3>
@@ -191,7 +189,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
                       Approve Request
                     </button>
                     <button
-                      onClick={() => handleResolveRequest(req.id, 'rejected')}
+                      onClick={() => handleResolveRequest(req.id, 'declined')}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#b59ebf] hover:text-[#fae8d7] border border-[#381e47] transition-colors"
                     >
                       Discuss
@@ -228,7 +226,6 @@ export const TodayTab: React.FC<TodayTabProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {activeDynamics.map(dynamic => {
-                const isChastity = dynamic.dynamicType === 'chastity_practice';
                 return (
                   <div
                     key={dynamic.id}
@@ -238,7 +235,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-[#251433] text-[#fae8d7]">
-                          {(dynamic.dynamicType || dynamic.category || 'Dynamic').replace('_', ' ')}
+                          {dynamic.dynamicType.replace('_', ' ')}
                         </span>
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Active" />
                       </div>
@@ -379,7 +376,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
               <div>
                 <h2 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#d94f6f]" />
-                  Today's Rituals
+                  Today&apos;s Rituals
                 </h2>
                 <p className="text-xs text-[#b59ebf]">Tap to mark completed</p>
               </div>

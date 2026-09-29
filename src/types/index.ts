@@ -1,4 +1,5 @@
 export * from './domain';
+export * from './legacyAdapters';
 
 export interface GuideItem {
   id: string;
@@ -111,13 +112,3 @@ export interface UserProfile {
   dailyPulsesSubmitted: number;
 }
 
-export interface PermissionRequest {
-  id: string;
-  from: string;
-  type: 'shower_clean' | 'sports_release' | 'edging_session' | 'comfort_adjustment' | 'early_release';
-  typeLabel: string;
-  note: string;
-  durationMinutes: number;
-  status: 'pending' | 'approved' | 'declined';
-  timestamp: string;
-}

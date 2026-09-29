@@ -19,7 +19,7 @@ import {
   Check
 } from 'lucide-react';
 import { DAILY_INTIMATE_PROMPTS, FOREPLAY_CHALLENGES } from '@/data/inclusiveOptions';
-import { PermissionRequest } from '@/types';
+import { LegacyPermissionRequest } from '@/types';
 
 export const CouplesDynamicsTab: React.FC = () => {
   const [subTab, setSubTab] = useState<'blind_match' | 'permissions' | 'sparks'>('blind_match');
@@ -61,7 +61,7 @@ export const CouplesDynamicsTab: React.FC = () => {
   const [isMatchesRevealed, setIsMatchesRevealed] = useState<boolean>(true);
 
   // Keyholder Permission Desk state (Kneel/Chaster inspired)
-  const [requests, setRequests] = useState<PermissionRequest[]>([
+  const [requests, setRequests] = useState<LegacyPermissionRequest[]>([
     {
       id: 'req-1',
       from: 'Wearer (Alex)',
@@ -84,7 +84,7 @@ export const CouplesDynamicsTab: React.FC = () => {
     }
   ]);
 
-  const [reqType, setReqType] = useState<PermissionRequest['type']>('shower_clean');
+  const [reqType, setReqType] = useState<LegacyPermissionRequest['type']>('shower_clean');
   const [reqNote, setReqNote] = useState('');
   const [reqDuration, setReqDuration] = useState(45);
   const [reqSubmitted, setReqSubmitted] = useState(false);
@@ -103,7 +103,7 @@ export const CouplesDynamicsTab: React.FC = () => {
       early_release: 'Scheduled Early Release Request'
     };
 
-    const newReq: PermissionRequest = {
+    const newReq: LegacyPermissionRequest = {
       id: `req-${Date.now()}`,
       from: 'Wearer (You)',
       type: reqType,

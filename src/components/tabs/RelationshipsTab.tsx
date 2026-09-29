@@ -4,15 +4,10 @@ import React, { useState } from 'react';
 import {
   Users,
   Plus,
-  Heart,
   Shield,
   ArrowRight,
   Sparkles,
-  Calendar,
-  Lock,
-  ChevronRight,
-  CheckCircle2,
-  AlertCircle
+  CheckCircle2
 } from 'lucide-react';
 import {
   INITIAL_RELATIONSHIPS,
@@ -20,7 +15,8 @@ import {
   INITIAL_AGREEMENTS,
   CURRENT_USER
 } from '../../data/domainDemoData';
-import { Relationship, RelationshipStatus } from '../../types/domain';
+import { Relationship, RelationshipStatus, CoreRelationshipStructure, CoreConnectionContext } from '../../types/domain';
+import { formatRelationshipDimensions, formatAgreementScope } from '../../types/legacyAdapters';
 
 interface RelationshipsTabProps {
   onNavigateDynamic?: (dynamicId: string) => void;
@@ -34,7 +30,8 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   const [filterStatus, setFilterStatus] = useState<RelationshipStatus | 'all'>('all');
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newRelName, setNewRelName] = useState('');
-  const [newRelType, setNewRelType] = useState('Primary Partnership');
+  const [newRelStructure, setNewRelStructure] = useState<CoreRelationshipStructure>('monogamous');
+  const [newRelContext, setNewRelContext] = useState<CoreConnectionContext>('cohabitating');
   const [newPartnerName, setNewPartnerName] = useState('');
 
   const selectedRelationship = relationships.find(r => r.id === selectedRelId) || relationships[0];
@@ -50,7 +47,8 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
     const newRel: Relationship = {
       id: `rel_${Date.now()}`,
       name: newRelName.trim(),
-      relationshipType: newRelType,
+      structure: newRelStructure,
+      connectionContexts: [newRelContext],
       status: 'active',
       privacy: 'participants_only',
       description: 'Newly defined relationship in Haven.',
@@ -67,7 +65,6 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                 userId: `usr_${Date.now()}`,
                 displayName: newPartnerName.trim(),
                 joinedAt: new Date().toISOString(),
-                roleDescription: 'Partner',
               },
             ]
           : []),
@@ -126,7 +123,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
           <div className="flex items-center justify-between border-b border-[#2d163d] pb-3">
             <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-[#d94f6f]" />
-              Establish a New Relationship Dynamic
+              Establish a New Relationship Framework
             </h3>
             <button
               type="button"
@@ -137,7 +134,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <div>
               <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
                 Relationship Label / Name
@@ -153,23 +150,39 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
             </div>
             <div>
               <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
-                Relationship Dynamic Type
+                Relationship Structure
               </label>
               <select
-                value={newRelType}
-                onChange={e => setNewRelType(e.target.value)}
+                value={newRelStructure}
+                onChange={e => setNewRelStructure(e.target.value as CoreRelationshipStructure)}
                 className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
               >
-                <option value="Primary Partnership">Primary Partnership</option>
-                <option value="Long-Distance Dynamic">Long-Distance Dynamic</option>
-                <option value="Polyamorous Connection">Polyamorous Connection</option>
-                <option value="Power-Exchange Focus">Power-Exchange Focus</option>
-                <option value="Casual / Exploration">Casual / Exploration</option>
+                <option value="monogamous">Monogamous</option>
+                <option value="polyamorous">Polyamorous</option>
+                <option value="open">Open</option>
+                <option value="solo_exploration">Solo Exploration</option>
+                <option value="custom">Custom</option>
               </select>
             </div>
             <div>
               <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
-                Partner's Display Name (Optional)
+                Connection Context
+              </label>
+              <select
+                value={newRelContext}
+                onChange={e => setNewRelContext(e.target.value as CoreConnectionContext)}
+                className="w-full px-3 py-2 rounded-xl bg-[#100717] border border-[#2d163d] text-xs text-[#fae8d7] focus:outline-none focus:border-[#d94f6f]"
+              >
+                <option value="cohabitating">Cohabitating</option>
+                <option value="nesting">Nesting</option>
+                <option value="long_distance">Long Distance</option>
+                <option value="dating">Dating</option>
+                <option value="occasional">Occasional</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold text-[#b59ebf] block mb-1">
+                Partner&apos;s Name (Optional)
               </label>
               <input
                 type="text"
@@ -231,7 +244,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#d94f6f]">
-                      {rel.relationshipType}
+                      {formatRelationshipDimensions(rel)}
                     </span>
                     <span
                       className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${
@@ -265,7 +278,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                 <div className="flex items-center gap-2">
                   <h2 className="text-xl font-bold text-[#fae8d7]">{selectedRelationship.name}</h2>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-[#251433] text-[#d94f6f] font-semibold">
-                    {selectedRelationship.relationshipType}
+                    {formatRelationshipDimensions(selectedRelationship)}
                   </span>
                 </div>
                 <p className="text-xs text-[#b59ebf] mt-1">{selectedRelationship.description}</p>
@@ -340,7 +353,7 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-[10px] font-semibold uppercase text-[#d94f6f]">
-                            {(dyn.dynamicType || dyn.category || 'Dynamic').replace('_', ' ')}
+                            {dyn.dynamicType.replace('_', ' ')}
                           </span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#251433] text-[#fae8d7] capitalize">
                             {dyn.status}
@@ -385,10 +398,10 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <h4 className="text-xs font-semibold text-[#fae8d7]">{agr.title}</h4>
                       </div>
-                      <p className="text-[11px] text-[#b59ebf] mt-1 max-w-xl">{agr.description}</p>
+                      <p className="text-[11px] text-[#b59ebf] mt-1 max-w-xl">{agr.content}</p>
                     </div>
                     <span className="text-[10px] font-semibold text-[#d94f6f] px-2 py-0.5 rounded bg-[#251433] shrink-0 self-start sm:self-center">
-                      Version {agr.version}
+                      {formatAgreementScope(agr.scope)}
                     </span>
                   </div>
                 ))}
