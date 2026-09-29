@@ -13,7 +13,9 @@ import {
   ChevronRight,
   Search,
   X,
-  Check
+  Check,
+  Flame,
+  ListChecks
 } from 'lucide-react';
 import {
   INITIAL_DYNAMICS,
@@ -21,6 +23,9 @@ import {
   INITIAL_AGREEMENTS,
   INITIAL_SESSIONS,
   INITIAL_RITUALS,
+  INITIAL_DESIRES,
+  INITIAL_HAVEN_REQUESTS,
+  INITIAL_TASKS,
   CURRENT_USER,
   ALL_USERS
 } from '../../data/domainDemoData';
@@ -33,6 +38,11 @@ import {
   Agreement,
   Session,
   Ritual,
+  Desire,
+  HavenRequest,
+  HavenTask,
+  DesireRating,
+  TaskProof,
 } from '../../types/domain';
 import { AgreementCard } from '../agreements/AgreementCard';
 import { AgreementDetailModal } from '../agreements/AgreementDetailModal';
@@ -42,6 +52,12 @@ import { SessionDetailModal } from '../sessions/SessionDetailModal';
 import { SessionCreationModal } from '../sessions/SessionCreationModal';
 import { RitualCard } from '../rituals/RitualCard';
 import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
+import { DesireCard } from '../desires/DesireCard';
+import { DesireCreationModal } from '../desires/DesireCreationModal';
+import { RequestCard } from '../requests/RequestCard';
+import { RequestCreationModal } from '../requests/RequestCreationModal';
+import { TaskCard } from '../tasks/TaskCard';
+import { TaskCreationModal } from '../tasks/TaskCreationModal';
 import {
   formatDynamicType,
   formatPracticeStage
@@ -66,7 +82,7 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
   const [filterStatus, setFilterStatus] = useState<DynamicStatus | 'all'>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'sessions' | 'rituals' | 'permissions'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'requests' | 'tasks' | 'sessions' | 'rituals' | 'desires' | 'permissions'>('overview');
 
   // Dynamic creation state
   const [isCreating, setIsCreating] = useState(false);
@@ -93,6 +109,14 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
   const [selectedRitualForExecution, setSelectedRitualForExecution] = useState<Ritual | null>(null);
   const [showRitualTemplates, setShowRitualTemplates] = useState(false);
 
+  // Phase 6 State: Desires, Requests, Tasks
+  const [desires, setDesires] = useState<Desire[]>(INITIAL_DESIRES);
+  const [isCreateDesireOpen, setIsCreateDesireOpen] = useState(false);
+  const [requests, setRequests] = useState<HavenRequest[]>(INITIAL_HAVEN_REQUESTS);
+  const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
+  const [tasks, setTasks] = useState<HavenTask[]>(INITIAL_TASKS);
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+
   const selectedDynamic = dynamics.find(d => d.id === selectedDynamicId);
   const selectedRel = INITIAL_RELATIONSHIPS.find(r => r.id === selectedDynamic?.relationshipId);
   const dynamicAgreements = agreements.filter(a => a.dynamicId === selectedDynamic?.id);
@@ -109,6 +133,20 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
 
   const dynamicRituals = rituals.filter(r =>
     r.dynamicId === selectedDynamic?.id || (r.relationshipId === selectedDynamic?.relationshipId && !r.dynamicId)
+  );
+
+  // Dynamic Phase 6 collections
+  const dynamicRequests = requests.filter(r =>
+    r.dynamicId === selectedDynamic?.id || (r.relationshipId === selectedDynamic?.relationshipId && !r.dynamicId)
+  );
+
+  const dynamicTasks = tasks.filter(t =>
+    t.dynamicId === selectedDynamic?.id || (t.relationshipId === selectedDynamic?.relationshipId && !t.dynamicId)
+  );
+
+  const dynamicDesires = desires.filter(d =>
+    d.dynamicId === selectedDynamic?.id ||
+    (d.relationshipId === selectedDynamic?.relationshipId && (d.tags?.some(t => selectedDynamic?.tags?.includes(t)) || !d.dynamicId))
   );
 
   const handleUpdateAgreement = (updated: Agreement) => {
@@ -138,6 +176,174 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
   const handleCompleteRitual = (completedRitual: Ritual) => {
     setRituals(prev => prev.map(r => r.id === completedRitual.id ? completedRitual : r));
     setSelectedRitualForExecution(null);
+  };
+
+  // Desires Handlers (Phase 6)
+  const handleRateDesire = (desireId: string, rating: DesireRating) => {
+    setDesires(prev =>
+      prev.map(d => {
+        if (d.id !== desireId) return d;
+        return {
+          ...d,
+          participantResponses: {
+            ...d.participantResponses,
+            [CURRENT_USER.id]: {
+              userId: CURRENT_USER.id,
+              rating,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleCreateDesire = (newDesire: Desire) => {
+    setDesires(prev => [newDesire, ...prev]);
+  };
+
+  // Requests Handlers (Phase 6)
+  const handleRespondRequest = (
+    requestId: string,
+    action: 'accept' | 'decline' | 'discuss' | 'not_now',
+    note?: string
+  ) => {
+    setRequests(prev =>
+      prev.map(r => {
+        if (r.id !== requestId) return r;
+        const now = new Date().toISOString();
+        let newStatus = r.status;
+        let actionType: 'accepted' | 'declined' | 'discuss_requested' | 'not_now' = 'accepted';
+
+        if (action === 'accept') {
+          newStatus = 'accepted';
+          actionType = 'accepted';
+        } else if (action === 'decline') {
+          newStatus = 'declined';
+          actionType = 'declined';
+        } else if (action === 'discuss') {
+          newStatus = 'discussing';
+          actionType = 'discuss_requested';
+        } else if (action === 'not_now') {
+          newStatus = 'not_now';
+          actionType = 'not_now';
+        }
+
+        return {
+          ...r,
+          status: newStatus,
+          responseNote: note || r.responseNote,
+          history: [
+            ...r.history,
+            {
+              id: `h_${Date.now()}`,
+              timestamp: now,
+              actorId: CURRENT_USER.id,
+              action: actionType,
+              note,
+            },
+          ],
+          updatedAt: now,
+        };
+      })
+    );
+  };
+
+  const handleCounterProposeRequest = (
+    requestId: string,
+    modifiedTitle: string,
+    modifiedConditions: string,
+    modifiedDurationMinutes: number | undefined,
+    note: string
+  ) => {
+    setRequests(prev =>
+      prev.map(r => {
+        if (r.id !== requestId) return r;
+        const now = new Date().toISOString();
+        return {
+          ...r,
+          status: 'counter_proposed',
+          counterProposal: {
+            proposedById: CURRENT_USER.id,
+            proposedAt: now,
+            modifiedTitle,
+            modifiedConditions,
+            modifiedDurationMinutes,
+            note,
+          },
+          history: [
+            ...r.history,
+            {
+              id: `h_${Date.now()}`,
+              timestamp: now,
+              actorId: CURRENT_USER.id,
+              action: 'counter_proposed',
+              note: `Counter-proposed: ${note}`,
+            },
+          ],
+          updatedAt: now,
+        };
+      })
+    );
+  };
+
+  const handleCreateRequest = (newReq: HavenRequest) => {
+    setRequests(prev => [newReq, ...prev]);
+  };
+
+  // Tasks Handlers (Phase 6)
+  const handleToggleCompleteTask = (taskId: string) => {
+    setTasks(prev =>
+      prev.map(t => {
+        if (t.id !== taskId) return t;
+        const isDone = t.status === 'completed' || t.status === 'verified';
+        return {
+          ...t,
+          status: isDone ? 'pending' : 'completed',
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleSubmitProofTask = (taskId: string, proof: TaskProof) => {
+    setTasks(prev =>
+      prev.map(t => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          status: 'submitted',
+          proof,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleVerifyProofTask = (taskId: string, verificationNote?: string) => {
+    setTasks(prev =>
+      prev.map(t => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          status: 'verified',
+          proof: t.proof
+            ? {
+                ...t.proof,
+                verifiedAt: new Date().toISOString(),
+                verifiedById: CURRENT_USER.id,
+                verificationNote,
+              }
+            : undefined,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleCreateTask = (newTask: HavenTask) => {
+    setTasks(prev => [newTask, ...prev]);
   };
 
   // Available descriptive tags extracted across dynamics
@@ -620,7 +826,31 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
                 }`}
               >
                 <FileCheck className="w-3.5 h-3.5 text-[#d94f6f]" />
-                <span>Agreements &amp; Protocols</span>
+                <span>Agreements &amp; Protocols ({dynamicAgreements.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSubTab('requests')}
+                className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeSubTab === 'requests'
+                    ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50'
+                    : 'text-[#b59ebf] hover:text-[#fae8d7] hover:bg-[#150a1e]'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-[#d94f6f]" />
+                <span>Requests &amp; Permissions ({dynamicRequests.length})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveSubTab('tasks')}
+                className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeSubTab === 'tasks'
+                    ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50'
+                    : 'text-[#b59ebf] hover:text-[#fae8d7] hover:bg-[#150a1e]'
+                }`}
+              >
+                <ListChecks className="w-3.5 h-3.5 text-[#d94f6f]" />
+                <span>Tasks &amp; Devotions ({dynamicTasks.length})</span>
               </button>
 
               <button
@@ -648,6 +878,18 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
               </button>
 
               <button
+                onClick={() => setActiveSubTab('desires')}
+                className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeSubTab === 'desires'
+                    ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50'
+                    : 'text-[#b59ebf] hover:text-[#fae8d7] hover:bg-[#150a1e]'
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5 text-[#d94f6f]" />
+                <span>Desires ({dynamicDesires.length})</span>
+              </button>
+
+              <button
                 onClick={() => setActiveSubTab('permissions')}
                 className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
                   activeSubTab === 'permissions'
@@ -655,8 +897,8 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
                     : 'text-[#b59ebf] hover:text-[#fae8d7] hover:bg-[#150a1e]'
                 }`}
               >
-                <MessageSquare className="w-3.5 h-3.5 text-[#d94f6f]" />
-                <span>Permissions &amp; Prompts</span>
+                <Sparkles className="w-3.5 h-3.5 text-[#d94f6f]" />
+                <span>Sparks &amp; Prompts</span>
               </button>
             </div>
           </div>
@@ -704,6 +946,109 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
                       users={ALL_USERS}
                       currentUserId="usr_alex"
                       onClick={() => setSelectedAgreementForDetail(agr)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeSubTab === 'requests' && (
+            <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-[#d94f6f]" />
+                    Requests &amp; Permissions ({dynamicRequests.length})
+                  </h3>
+                  <p className="text-xs text-[#b59ebf]">
+                    Chastity unlock inquiries, protocol waivers, scene proposals, and boundary checks.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateRequestOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d94f6f] text-white hover:bg-[#b83856] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d94f6f]/10 self-start sm:self-center"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Request</span>
+                </button>
+              </div>
+
+              {dynamicRequests.length === 0 ? (
+                <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                  <p className="text-xs text-[#8d7596]">No requests currently active for this dynamic.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateRequestOpen(true)}
+                    className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                  >
+                    Submit a request or proposal for {selectedDynamic.name}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {dynamicRequests.map(req => (
+                    <RequestCard
+                      key={req.id}
+                      request={req}
+                      currentUser={CURRENT_USER}
+                      allUsers={ALL_USERS}
+                      onRespond={handleRespondRequest}
+                      onCounterPropose={handleCounterProposeRequest}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeSubTab === 'tasks' && (
+            <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                    <ListChecks className="w-4 h-4 text-[#d94f6f]" />
+                    Tasks &amp; Devotions ({dynamicTasks.length})
+                  </h3>
+                  <p className="text-xs text-[#b59ebf]">
+                    Service protocols, daily devotions, hygiene checks, and reflective practice tasks.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateTaskOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#d94f6f] text-white hover:bg-[#b83856] transition-colors flex items-center gap-1.5 shadow-md shadow-[#d94f6f]/10 self-start sm:self-center"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Assign Task</span>
+                </button>
+              </div>
+
+              {dynamicTasks.length === 0 ? (
+                <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                  <p className="text-xs text-[#8d7596]">No tasks or devotions currently assigned for this dynamic.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateTaskOpen(true)}
+                    className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                  >
+                    Assign a devotion or task for {selectedDynamic.name}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {dynamicTasks.map(t => (
+                    <TaskCard
+                      key={t.id}
+                      task={t}
+                      currentUser={CURRENT_USER}
+                      allUsers={ALL_USERS}
+                      onToggleComplete={handleToggleCompleteTask}
+                      onSubmitProof={handleSubmitProofTask}
+                      onVerifyProof={handleVerifyProofTask}
                     />
                   ))}
                 </div>
@@ -857,6 +1202,64 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
             </div>
           )}
 
+          {activeSubTab === 'desires' && (
+            <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-[#d94f6f]" />
+                    Desires &amp; Curiosities ({dynamicDesires.length})
+                  </h3>
+                  <p className="text-xs text-[#b59ebf]">
+                    Explore fantasies and boundary interests connected to this dynamic with double-blind privacy.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDesireOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5 self-start sm:self-center"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                  <span>Add Desire</span>
+                </button>
+              </div>
+
+              {dynamicDesires.length === 0 ? (
+                <div className="p-8 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                  <p className="text-xs text-[#8d7596]">No desires linked to this dynamic yet.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateDesireOpen(true)}
+                    className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                  >
+                    Add a desire related to {selectedDynamic.name}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {dynamicDesires.map(d => (
+                    <DesireCard
+                      key={d.id}
+                      desire={d}
+                      currentUser={CURRENT_USER}
+                      allUsers={ALL_USERS}
+                      onRateDesire={handleRateDesire}
+                      onProposeRequest={() => {
+                        setActiveSubTab('requests');
+                        setIsCreateRequestOpen(true);
+                      }}
+                      onDraftAgreement={() => {
+                        setActiveSubTab('overview');
+                        setIsCreateAgreementOpen(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {activeSubTab === 'permissions' && (
             <div className="rounded-2xl bg-[#1c1026] border border-[#251433] p-4 sm:p-6">
               <CouplesDynamicsTab />
@@ -936,6 +1339,45 @@ export const DynamicsTab: React.FC<DynamicsTabProps> = ({
           onClose={() => setSelectedRitualForExecution(null)}
           currentUserId={CURRENT_USER.id}
           onCompleteRitual={handleCompleteRitual}
+        />
+      )}
+
+      {/* Desire Creation Modal */}
+      {isCreateDesireOpen && (
+        <DesireCreationModal
+          isOpen={isCreateDesireOpen}
+          onClose={() => setIsCreateDesireOpen(false)}
+          currentUser={CURRENT_USER}
+          relationships={INITIAL_RELATIONSHIPS}
+          onCreateDesire={handleCreateDesire}
+        />
+      )}
+
+      {/* Request Creation Modal */}
+      {isCreateRequestOpen && (
+        <RequestCreationModal
+          isOpen={isCreateRequestOpen}
+          onClose={() => setIsCreateRequestOpen(false)}
+          currentUser={CURRENT_USER}
+          allUsers={ALL_USERS}
+          relationships={INITIAL_RELATIONSHIPS}
+          dynamics={dynamics}
+          initialDynamicId={selectedDynamic?.id}
+          onCreateRequest={handleCreateRequest}
+        />
+      )}
+
+      {/* Task Creation Modal */}
+      {isCreateTaskOpen && (
+        <TaskCreationModal
+          isOpen={isCreateTaskOpen}
+          onClose={() => setIsCreateTaskOpen(false)}
+          currentUser={CURRENT_USER}
+          allUsers={ALL_USERS}
+          relationships={INITIAL_RELATIONSHIPS}
+          dynamics={dynamics}
+          initialDynamicId={selectedDynamic?.id}
+          onCreateTask={handleCreateTask}
         />
       )}
     </div>

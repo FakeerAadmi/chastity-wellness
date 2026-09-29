@@ -15,6 +15,14 @@ import {
   Check,
   Plus,
   Play,
+  Flame,
+  Gift,
+  Camera,
+  CheckSquare,
+  Inbox,
+  GitFork,
+  ChevronRight,
+  Circle
 } from 'lucide-react';
 import {
   CURRENT_USER,
@@ -22,18 +30,32 @@ import {
   INITIAL_RELATIONSHIPS,
   INITIAL_DYNAMICS,
   INITIAL_RITUALS,
+  INITIAL_HAVEN_REQUESTS,
+  INITIAL_DESIRES,
+  INITIAL_TASKS,
   INITIAL_PERMISSION_REQUESTS,
   INITIAL_SESSIONS,
   INITIAL_AGREEMENTS,
   INITIAL_CHECKINS,
   INITIAL_SAFETY_PLAN
 } from '../../data/domainDemoData';
-import { CheckInScale, Ritual, Session, CheckIn } from '../../types/domain';
+import {
+  CheckInScale,
+  Ritual,
+  Session,
+  CheckIn,
+  HavenRequest,
+  Desire,
+  HavenTask,
+  TaskProof
+} from '../../types/domain';
 import { SessionCard } from '../sessions/SessionCard';
 import { SessionDetailModal } from '../sessions/SessionDetailModal';
 import { SessionCreationModal } from '../sessions/SessionCreationModal';
 import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
 import { CheckInModal } from '../checkins/CheckInModal';
+import { TaskProofModal } from '../tasks/TaskProofModal';
+import { RequestCounterModal } from '../requests/RequestCounterModal';
 
 interface TodayTabProps {
   onNavigateTab: (tab: string) => void;
@@ -50,7 +72,9 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   const [sessions, setSessions] = useState<Session[]>(INITIAL_SESSIONS);
   const [rituals, setRituals] = useState<Ritual[]>(INITIAL_RITUALS);
   const [, setCheckins] = useState<CheckIn[]>(INITIAL_CHECKINS);
-  const [pendingRequests, setPendingRequests] = useState(INITIAL_PERMISSION_REQUESTS);
+  const [requests, setRequests] = useState<HavenRequest[]>(INITIAL_HAVEN_REQUESTS);
+  const [tasks, setTasks] = useState<HavenTask[]>(INITIAL_TASKS);
+  const [desires] = useState<Desire[]>(INITIAL_DESIRES);
   const [checkInMood, setCheckInMood] = useState<CheckInScale>('great');
   const [checkInNote, setCheckInNote] = useState('');
   const [checkInSaved, setCheckInSaved] = useState(false);
@@ -60,6 +84,99 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
   const [selectedRitualForExecution, setSelectedRitualForExecution] = useState<Ritual | null>(null);
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [selectedTaskForProof, setSelectedTaskForProof] = useState<HavenTask | null>(null);
+  const [counterModalRequest, setCounterModalRequest] = useState<HavenRequest | null>(null);
+
+  // Toggle task completion
+  const handleToggleTask = (taskId: string) => {
+    setTasks(prev =>
+      prev.map(t => {
+        if (t.id !== taskId) return t;
+        const isDone = t.status === 'completed' || t.status === 'verified';
+        return {
+          ...t,
+          status: isDone ? 'pending' : 'completed',
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleSubmitTaskProof = (taskId: string, proof: TaskProof) => {
+    setTasks(prev =>
+      prev.map(t => (t.id === taskId ? { ...t, status: 'submitted', proof, updatedAt: new Date().toISOString() } : t))
+    );
+  };
+
+  // Quick request response
+  const handleRespondToRequest = (
+    requestId: string,
+    action: 'accept' | 'decline' | 'discuss' | 'not_now',
+    note?: string
+  ) => {
+    setRequests(prev =>
+      prev.map(req => {
+        if (req.id !== requestId) return req;
+        const statusMap = {
+          accept: 'accepted' as const,
+          decline: 'declined' as const,
+          discuss: 'discussing' as const,
+          not_now: 'not_now' as const,
+        };
+        return {
+          ...req,
+          status: statusMap[action],
+          responseNote: note,
+          history: [
+            ...req.history,
+            {
+              timestamp: new Date().toISOString(),
+              action: action === 'accept' ? 'accepted' : action === 'decline' ? 'declined' : 'discuss_requested',
+              actorId: CURRENT_USER.id,
+              note,
+            },
+          ],
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleSendCounterProposal = (
+    requestId: string,
+    modifiedTitle: string,
+    modifiedConditions: string,
+    modifiedDurationMinutes: number | undefined,
+    note: string
+  ) => {
+    setRequests(prev =>
+      prev.map(req => {
+        if (req.id !== requestId) return req;
+        return {
+          ...req,
+          status: 'counter_proposed',
+          counterProposal: {
+            modifiedTitle,
+            modifiedConditions,
+            modifiedDurationMinutes,
+            note,
+            proposedById: CURRENT_USER.id,
+            proposedAt: new Date().toISOString(),
+          },
+          history: [
+            ...req.history,
+            {
+              timestamp: new Date().toISOString(),
+              action: 'counter_proposed',
+              actorId: CURRENT_USER.id,
+              note: `Counter-proposed: ${note}`,
+            },
+          ],
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
 
   // Toggle ritual completion
   const handleToggleRitual = (ritualId: string) => {
@@ -84,13 +201,6 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           };
         }
       })
-    );
-  };
-
-  // Quick permission approval / resolution
-  const handleResolveRequest = (id: string, status: 'approved' | 'declined') => {
-    setPendingRequests(prev =>
-      prev.map(req => (req.id === id ? { ...req, status } : req))
     );
   };
 
@@ -128,6 +238,25 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   const activeOrPlannedSessions = sessions.filter(s => s.status === 'active' || s.status === 'planned');
 
   // Things that need user attention
+  const incomingPendingRequests = requests.filter(
+    r => r.recipientIds.includes(CURRENT_USER.id) && r.status === 'pending'
+  );
+
+  const tasksDueToday = tasks.filter(
+    t => t.assignedToIds.includes(CURRENT_USER.id) &&
+         (t.priority === 'high_focus' || t.recurrence === 'daily') &&
+         t.status !== 'completed' && t.status !== 'verified'
+  );
+
+  const isPositiveRating = (r?: string) => r === 'eager' || r === 'curious' || r === 'exploring';
+  const topMutualMatch = desires.find(d => {
+    const myRating = d.participantResponses[CURRENT_USER.id]?.rating;
+    if (!isPositiveRating(myRating)) return false;
+    return Object.entries(d.participantResponses).some(
+      ([uid, resp]) => uid !== CURRENT_USER.id && isPositiveRating(resp.rating)
+    );
+  });
+
   const sessionsNeedingReadiness = sessions.filter(
     s => (s.status === 'planned' || s.status === 'active') &&
          s.participantReadiness?.[CURRENT_USER.id] === 'needs_discussion'
@@ -137,7 +266,8 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   );
 
   const pendingItemsCount =
-    pendingRequests.filter(r => r.status === 'pending').length +
+    incomingPendingRequests.length +
+    tasksDueToday.length +
     sessionsNeedingReadiness.length +
     agreementsInNegotiation.length;
   const completedRitualsCount = rituals.filter(r => r.completions.length > 0).length;
@@ -207,48 +337,118 @@ export const TodayTab: React.FC<TodayTabProps> = ({
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
             <div>
               <p className="font-medium text-[#fae8d7]">No urgent actions pending</p>
-              <p className="text-xs text-[#8d7596]">All agreements, checks, and requests are currently up to date.</p>
+              <p className="text-xs text-[#8d7596]">All agreements, checks, requests, and tasks are currently up to date.</p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3">
-            {/* Permission Requests */}
-            {pendingRequests
-              .filter(r => r.status === 'pending')
-              .map(req => (
-                <div
-                  key={req.id}
-                  className="p-4 rounded-xl bg-[#1c1026] border border-[#d94f6f]/30 hover:border-[#d94f6f]/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#d94f6f]/15 text-[#d94f6f] border border-[#d94f6f]/30 uppercase tracking-wider">
-                        {req.requestType.replace('_', ' ')}
+            {/* Incoming Requests Waiting For You */}
+            {incomingPendingRequests.map(req => (
+              <div
+                key={req.id}
+                className="p-4 rounded-xl bg-[#1c1026] border border-[#d94f6f]/40 hover:border-[#d94f6f]/70 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#d94f6f]/20 text-[#d94f6f] border border-[#d94f6f]/30 uppercase tracking-wider">
+                      {req.requestMode === 'permission' ? 'Permission Request' : 'Proposal'}
+                    </span>
+                    <span className="text-xs text-[#b59ebf]">
+                      from {ALL_USERS.find(u => u.id === req.requesterId)?.displayName || 'Partner'}
+                    </span>
+                    {req.durationMinutes && (
+                      <span className="text-[10px] font-semibold text-[#b59ebf] bg-[#251433] px-2 py-0.5 rounded">
+                        {req.durationMinutes} min
                       </span>
-                      <span className="text-xs text-[#b59ebf]">
-                        from {req.requesterId === CURRENT_USER.id ? 'You' : 'Partner'}
-                      </span>
-                    </div>
-                    <h3 className="text-sm font-semibold text-[#fae8d7]">{req.title}</h3>
-                    <p className="text-xs text-[#b59ebf] leading-relaxed max-w-2xl">{req.description}</p>
+                    )}
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                    <button
-                      onClick={() => handleResolveRequest(req.id, 'approved')}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#d94f6f] hover:bg-[#b83856] text-white transition-colors"
-                    >
-                      Approve Request
-                    </button>
-                    <button
-                      onClick={() => handleResolveRequest(req.id, 'declined')}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#b59ebf] hover:text-[#fae8d7] border border-[#381e47] transition-colors"
-                    >
-                      Discuss
-                    </button>
-                  </div>
+                  <h3 className="text-sm font-semibold text-[#fae8d7]">{req.title}</h3>
+                  <p className="text-xs text-[#b59ebf] leading-relaxed max-w-2xl">{req.description}</p>
+                  {req.conditions && (
+                    <p className="text-[11px] text-[#e8cce8] italic">
+                      Condition: {req.conditions}
+                    </p>
+                  )}
                 </div>
-              ))}
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0 self-end sm:self-center">
+                  <button
+                    onClick={() => handleRespondToRequest(req.id, 'accept')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#10b981] hover:bg-[#059669] text-white transition-colors flex items-center gap-1 shadow-sm"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => setCounterModalRequest(req)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#c084fc]/20 hover:bg-[#c084fc]/30 text-[#c084fc] border border-[#c084fc]/40 transition-colors flex items-center gap-1"
+                  >
+                    <GitFork className="w-3 h-3" />
+                    Counter
+                  </button>
+                  <button
+                    onClick={() => handleRespondToRequest(req.id, 'discuss', 'Let\'s talk in person')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#b59ebf] hover:text-[#fae8d7] border border-[#381e47] transition-colors"
+                  >
+                    Discuss
+                  </button>
+                  <button
+                    onClick={() => handleRespondToRequest(req.id, 'decline')}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#251433] hover:bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/30 transition-colors"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* High-Focus Tasks Due Today */}
+            {tasksDueToday.map(task => (
+              <div
+                key={task.id}
+                className="p-4 rounded-xl bg-[#1c1026] border border-[#eab308]/40 hover:border-[#eab308]/70 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#eab308]/15 text-[#eab308] border border-[#eab308]/30 uppercase tracking-wider">
+                      Task Due Today
+                    </span>
+                    <span className="text-xs text-[#b59ebf]">
+                      Assigned by {ALL_USERS.find(u => u.id === task.assignedById)?.displayName || 'Partner'}
+                    </span>
+                    {task.proofType !== 'none' && (
+                      <span className="text-[10px] text-[#f472b6] font-semibold bg-[#2d123b] px-1.5 py-0.5 rounded border border-[#db2777]/30">
+                        {task.proofType.replace('_', ' ')}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-sm font-semibold text-[#fae8d7]">{task.title}</h3>
+                  <p className="text-xs text-[#b59ebf] leading-relaxed max-w-2xl">{task.description}</p>
+                  {task.rewardDescription && (
+                    <p className="text-[11px] text-[#eab308] flex items-center gap-1">
+                      <Gift className="w-3 h-3" />
+                      Reward: {task.rewardDescription}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <button
+                    onClick={() => {
+                      if (task.proofType !== 'none' && task.proofType !== 'completion_confirmation') {
+                        setSelectedTaskForProof(task);
+                      } else {
+                        handleToggleTask(task.id);
+                      }
+                    }}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#eab308] hover:bg-[#ca8a04] text-black transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{task.proofType !== 'none' && task.proofType !== 'completion_confirmation' ? 'Submit Proof' : 'Mark Done'}</span>
+                  </button>
+                </div>
+              </div>
+            ))}
 
             {/* Sessions Needing Discussion / Readiness */}
             {sessionsNeedingReadiness.map(sess => (
@@ -310,6 +510,47 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           </div>
         )}
       </section>
+
+      {/* 2.5. Something You Both Want to Explore (Mutual Desire Match Spotlight) */}
+      {topMutualMatch && (
+        <section className="p-5 rounded-2xl bg-gradient-to-r from-[#d94f6f]/20 via-[#a855f7]/15 to-[#1c1026] border border-[#d94f6f]/50 shadow-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#d94f6f]/30 text-[#fae8d7] text-[10px] font-bold uppercase tracking-wider border border-[#d94f6f]/40">
+                  <Flame className="w-3 h-3 text-[#d94f6f]" />
+                  Something You Both Want to Explore
+                </span>
+                <span className="text-[10px] font-semibold text-[#b59ebf] uppercase">
+                  {topMutualMatch.category.replace('_', ' ')}
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-[#fae8d7]">
+                {topMutualMatch.title}
+              </h3>
+              <p className="text-xs text-[#d4c3d9] leading-relaxed max-w-2xl">
+                {topMutualMatch.description}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => onNavigateTab('requests')}
+                className="px-4 py-2 rounded-xl bg-[#d94f6f] hover:bg-[#e05a7a] text-white text-xs font-bold transition-all shadow-md shadow-[#d94f6f]/25 flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Propose Request</span>
+              </button>
+              <button
+                onClick={() => onNavigateTab('desires')}
+                className="px-3 py-2 rounded-xl bg-[#251433] hover:bg-[#341b47] text-[#fae8d7] border border-[#381e47] text-xs font-semibold transition-colors"
+              >
+                <span>View Deck</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 3. Core Split: Active Dynamics & Today's Rituals */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -498,8 +739,85 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           </div>
         </div>
 
-        {/* Right Column (1 Col): Today's Rituals Checklist & Safety Quick Access */}
+        {/* Right Column (1 Col): Today's Tasks, Today's Rituals & Safety Quick Access */}
         <div className="space-y-6">
+          {/* Today's Tasks & Devotions */}
+          <div className="p-5 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#251433] pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-[#fae8d7] flex items-center gap-2">
+                  <CheckSquare className="w-4 h-4 text-[#d94f6f]" />
+                  Today&apos;s Tasks &amp; Devotions
+                </h2>
+                <p className="text-xs text-[#b59ebf]">Active daily commitments</p>
+              </div>
+              <button
+                onClick={() => onNavigateTab('tasks')}
+                className="text-xs font-semibold text-[#d94f6f] hover:underline"
+              >
+                All Tasks
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {tasks
+                .filter(t => t.assignedToIds.includes(CURRENT_USER.id) && t.status !== 'completed' && t.status !== 'verified')
+                .slice(0, 3)
+                .map(task => {
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={() => {
+                        if (task.proofType !== 'none' && task.proofType !== 'completion_confirmation') {
+                          setSelectedTaskForProof(task);
+                        } else {
+                          handleToggleTask(task.id);
+                        }
+                      }}
+                      className="p-3 rounded-xl border border-[#251433] hover:border-[#d94f6f]/40 bg-[#130b1a] transition-all cursor-pointer flex items-center justify-between gap-3 select-none"
+                    >
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <div className="w-5 h-5 mt-0.5 rounded-lg border border-[#472758] bg-[#1a0c26] flex items-center justify-center shrink-0">
+                          <Circle className="w-3.5 h-3.5 text-[#6b5873]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-semibold truncate text-[#fae8d7]">
+                            {task.title}
+                          </h4>
+                          {task.rewardDescription ? (
+                            <p className="text-[10px] text-[#eab308] truncate mt-0.5 flex items-center gap-1">
+                              <Gift className="w-2.5 h-2.5" />
+                              Reward: {task.rewardDescription}
+                            </p>
+                          ) : (
+                            <p className="text-[11px] text-[#b59ebf] line-clamp-1 mt-0.5">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {task.proofType !== 'none' && task.proofType !== 'completion_confirmation' ? (
+                        <span className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[#251433] text-[#f472b6] border border-[#db2777]/30 shrink-0">
+                          Proof
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-[#251433] text-[#fae8d7] border border-[#381e47] shrink-0">
+                          Done
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+
+              {tasks.filter(t => t.assignedToIds.includes(CURRENT_USER.id) && t.status !== 'completed' && t.status !== 'verified').length === 0 && (
+                <div className="p-3 text-center text-xs text-[#8d7596] rounded-xl bg-[#130b1a] border border-[#251433]">
+                  All assigned tasks completed for today.
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Today's Rituals Checklist */}
           <div className="p-5 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
             <div className="flex items-center justify-between border-b border-[#251433] pb-3">
@@ -686,6 +1004,28 @@ export const TodayTab: React.FC<TodayTabProps> = ({
           users={ALL_USERS}
           currentUserId={CURRENT_USER.id}
           onSaveCheckIn={handleSaveModalCheckIn}
+        />
+      )}
+
+      {/* Task Proof Modal */}
+      {selectedTaskForProof && (
+        <TaskProofModal
+          isOpen={!!selectedTaskForProof}
+          onClose={() => setSelectedTaskForProof(null)}
+          task={selectedTaskForProof}
+          currentUser={CURRENT_USER}
+          allUsers={ALL_USERS}
+          onSubmitProof={handleSubmitTaskProof}
+        />
+      )}
+
+      {/* Request Counter-Proposal Modal */}
+      {counterModalRequest && (
+        <RequestCounterModal
+          isOpen={!!counterModalRequest}
+          onClose={() => setCounterModalRequest(null)}
+          request={counterModalRequest}
+          onSendCounterProposal={handleSendCounterProposal}
         />
       )}
     </div>

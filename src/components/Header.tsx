@@ -14,7 +14,10 @@ import {
   Sparkles,
   EyeOff,
   Users,
-  Compass
+  Compass,
+  Flame,
+  Inbox,
+  CheckSquare
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -26,6 +29,8 @@ interface HeaderProps {
   onToggleStealth: () => void;
   userRole: 'Wearer' | 'Keyholder' | 'Explorer';
   setUserRole: (role: 'Wearer' | 'Keyholder' | 'Explorer') => void;
+  pendingRequestsCount?: number;
+  tasksDueCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -36,12 +41,17 @@ export const Header: React.FC<HeaderProps> = ({
   onReturnToSplash,
   onToggleStealth,
   userRole,
-  setUserRole
+  setUserRole,
+  pendingRequestsCount = 0,
+  tasksDueCount = 0
 }) => {
   const tabs = [
     { id: 'today', label: 'Today', icon: Sparkles },
     { id: 'relationships', label: 'Relationships', icon: Users },
     { id: 'dynamics', label: 'Dynamics', icon: Heart },
+    { id: 'desires', label: 'Desires', icon: Flame },
+    { id: 'requests', label: 'Requests', icon: Inbox, badge: pendingRequestsCount },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare, badge: tasksDueCount },
     { id: 'explore', label: 'Explore', icon: Compass },
     { id: 'community', label: 'Community', icon: MessageSquare },
     { id: 'profile', label: 'Profile', icon: User },
@@ -87,6 +97,11 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#d94f6f]' : 'text-[#b59ebf]'}`} />
                   <span>{tab.label}</span>
+                  {Boolean(tab.badge && tab.badge > 0) && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-[#d94f6f] text-white text-[10px] font-bold">
+                      {tab.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -146,11 +161,16 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-1 px-2 rounded-lg font-semibold shrink-0 ${
+              className={`py-1 px-2 rounded-lg font-semibold shrink-0 flex items-center gap-1 ${
                 activeTab === tab.id ? 'text-[#d94f6f] bg-[#251433]' : 'text-[#b59ebf]'
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {Boolean(tab.badge && tab.badge > 0) && (
+                <span className="px-1 py-0.1 rounded-full bg-[#d94f6f] text-white text-[9px] font-bold">
+                  {tab.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>

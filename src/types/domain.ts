@@ -294,35 +294,173 @@ export interface Agreement {
 }
 
 // ==========================================
-// 5. PERMISSION REQUEST (Canonical Model)
+// 4.5. DESIRES & MUTUAL DISCOVERY (Phase 6)
 // ==========================================
-export type PermissionRequestStatus = 'pending' | 'approved' | 'declined' | 'withdrawn' | 'expired';
+export type DesireRating =
+  | 'eager'           // Enthusiastic yes / eager about
+  | 'curious'         // Curious about / open to try
+  | 'exploring'       // Exploring / maybe interested
+  | 'fantasy_only'    // Erotic in thought only / no physical execution
+  | 'unsure'          // Unsure / needs more context or discussion
+  | 'not_interested'  // Not interested
+  | 'hard_boundary';  // Hard limit / inviolable boundary
 
-export interface PermissionRequestHistory {
+export type DesireSharingMode =
+  | 'private'              // Only creator sees it
+  | 'mutual_match_only'    // Double-blind: only revealed if both/all express interest
+  | 'shared_relationship'  // Visible to relationship participants
+  | 'shared_selected';     // Visible to designated user IDs
+
+export type DesireCategory =
+  | 'bdsm_power'
+  | 'chastity_control'
+  | 'non_monogamy'
+  | 'roleplay_fantasy'
+  | 'intimacy_sensual'
+  | 'service_protocol'
+  | 'fetish_kink'
+  | 'emotional_connection'
+  | 'daily_living';
+
+export interface ParticipantDesireResponse {
+  userId: string;
+  rating: DesireRating;
+  privateNotes?: string;
+  updatedAt: string;
+}
+
+export interface Desire {
+  id: string;
+  title: string;
+  description: string;
+  category: DesireCategory;
+  tags: string[];
+  createdById: string;
+  relationshipId?: string;
+  dynamicId?: string;
+  sharingMode: DesireSharingMode;
+  allowedParticipantIds?: string[];
+  participantResponses: Record<string, ParticipantDesireResponse>;
+  /** Optional linked dynamic or agreement if graduated to practice */
+  graduatedToDynamicId?: string;
+  graduatedToAgreementId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==========================================
+// 5. REQUEST & PERMISSION REQUEST (Phase 6 Canonical Model)
+// ==========================================
+export type RequestMode = 'proposal' | 'permission';
+
+export type HavenRequestStatus =
+  | 'pending'
+  | 'accepted'
+  | 'declined'
+  | 'discussing'
+  | 'counter_proposed'
+  | 'not_now'
+  | 'withdrawn'
+  | 'expired'
+  | 'approved'; // Alias for accepted in backward compat
+
+export type PermissionRequestStatus = HavenRequestStatus;
+
+export interface RequestHistoryEntry {
   timestamp: string;
-  action: 'requested' | 'approved' | 'declined' | 'modified' | 'withdrawn';
+  action:
+    | 'requested'
+    | 'accepted'
+    | 'approved'
+    | 'declined'
+    | 'discuss_requested'
+    | 'counter_proposed'
+    | 'not_now'
+    | 'modified'
+    | 'withdrawn';
   actorId: string;
   note?: string;
 }
 
-export interface PermissionRequest {
+export type PermissionRequestHistory = RequestHistoryEntry;
+
+export interface RequestCounterProposal {
+  modifiedTitle?: string;
+  modifiedConditions?: string;
+  modifiedDurationMinutes?: number;
+  note: string;
+  proposedById: string;
+  proposedAt: string;
+}
+
+export interface HavenRequest {
   id: string;
   requesterId: string;
-  recipientIds: string[];
+  recipientIds: string[]; // Supports 1-to-1, 1-to-many, multi-party
   relationshipId: string;
-  dynamicId: string;
-  requestType: string;
+  dynamicId?: string;
+  agreementId?: string;
+  requestMode?: RequestMode; // 'proposal' for casual/interpersonal vs 'permission' for D/s/Chastity
+  requestType: string; // e.g. 'chastity_release', 'scene_proposal', 'outside_date', 'protocol_waiver', 'date_invitation'
   title: string;
   description?: string;
   conditions?: string;
   durationMinutes?: number;
-  status: PermissionRequestStatus;
+  status: HavenRequestStatus;
   responseNote?: string;
+  counterProposal?: RequestCounterProposal;
   expiresAt?: string;
-  history: PermissionRequestHistory[];
+  history: RequestHistoryEntry[];
   createdAt: string;
   updatedAt: string;
 }
+
+/** PermissionRequest alias maintaining complete backward compatibility */
+export type PermissionRequest = HavenRequest;
+
+// ==========================================
+// 5.5. TASKS & PROOF VERIFICATION (Phase 6)
+// ==========================================
+export type TaskRecurrence = 'once' | 'daily' | 'weekdays' | 'weekends' | 'weekly' | 'custom';
+export type TaskPriority = 'gentle' | 'standard' | 'high_focus';
+export type TaskProofType = 'none' | 'text_note' | 'ephemeral_photo' | 'voice_note' | 'completion_confirmation';
+export type TaskStatus = 'pending' | 'submitted' | 'verified' | 'completed' | 'dismissed';
+
+export interface TaskProof {
+  proofType: TaskProofType;
+  submittedAt: string;
+  submittedById: string;
+  textNote?: string;
+  mediaUri?: string; // Encrypted / private ephemeral reference
+  mediaExpiresAt?: string;
+  verifiedAt?: string;
+  verifiedById?: string;
+  verificationNote?: string;
+}
+
+export interface HavenTask {
+  id: string;
+  title: string;
+  description?: string;
+  assignedById: string;
+  assignedToIds: string[]; // Multi-person support
+  relationshipId: string;
+  dynamicId?: string;
+  agreementId?: string;
+  dueDate?: string;
+  recurrence: TaskRecurrence;
+  priority: TaskPriority;
+  proofType: TaskProofType;
+  proof?: TaskProof;
+  notes?: string;
+  rewardDescription?: string; // e.g. "Choose Saturday date", "Receive surprise", "Unlocked massage"
+  visibility: 'relationship' | 'assignee_only';
+  status: TaskStatus;
+  category: 'ordinary' | 'ldr' | 'ds_protocol' | 'chastity' | 'relationship_care' | 'custom';
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 // ==========================================
 // 6. FIRST-CLASS SESSION MODEL (Phase 5)

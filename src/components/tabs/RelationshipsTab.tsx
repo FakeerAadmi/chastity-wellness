@@ -19,7 +19,11 @@ import {
   UserPlus,
   Trash2,
   ShieldCheck,
-  Check
+  Check,
+  Flame,
+  MessageSquare,
+  Key,
+  ListChecks
 } from 'lucide-react';
 import {
   INITIAL_RELATIONSHIPS,
@@ -28,6 +32,9 @@ import {
   INITIAL_CHECKINS,
   INITIAL_SESSIONS,
   INITIAL_RITUALS,
+  INITIAL_DESIRES,
+  INITIAL_HAVEN_REQUESTS,
+  INITIAL_TASKS,
   CURRENT_USER,
   ALL_USERS
 } from '../../data/domainDemoData';
@@ -40,6 +47,11 @@ import {
   Agreement,
   Session,
   Ritual,
+  Desire,
+  HavenRequest,
+  HavenTask,
+  DesireRating,
+  TaskProof,
 } from '../../types/domain';
 import { AgreementCard } from '../agreements/AgreementCard';
 import { AgreementDetailModal } from '../agreements/AgreementDetailModal';
@@ -49,6 +61,12 @@ import { SessionDetailModal } from '../sessions/SessionDetailModal';
 import { SessionCreationModal } from '../sessions/SessionCreationModal';
 import { RitualCard } from '../rituals/RitualCard';
 import { RitualExecutionModal } from '../rituals/RitualExecutionModal';
+import { DesireCard } from '../desires/DesireCard';
+import { DesireCreationModal } from '../desires/DesireCreationModal';
+import { RequestCard } from '../requests/RequestCard';
+import { RequestCreationModal } from '../requests/RequestCreationModal';
+import { TaskCard } from '../tasks/TaskCard';
+import { TaskCreationModal } from '../tasks/TaskCreationModal';
 import {
   formatRelationshipStructure,
   formatConnectionContext,
@@ -119,6 +137,18 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   const [rituals, setRituals] = useState<Ritual[]>(INITIAL_RITUALS);
   const [selectedRitualForExecution, setSelectedRitualForExecution] = useState<Ritual | null>(null);
 
+  // Desires State (Phase 6)
+  const [desires, setDesires] = useState<Desire[]>(INITIAL_DESIRES);
+  const [isCreateDesireOpen, setIsCreateDesireOpen] = useState(false);
+
+  // Requests State (Phase 6)
+  const [requests, setRequests] = useState<HavenRequest[]>(INITIAL_HAVEN_REQUESTS);
+  const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
+
+  // Tasks State (Phase 6)
+  const [tasks, setTasks] = useState<HavenTask[]>(INITIAL_TASKS);
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+
   const selectedRelationship = relationships.find(r => r.id === selectedRelId) || relationships[0];
 
   const handleUpdateAgreement = (updated: Agreement) => {
@@ -148,6 +178,174 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   const handleCompleteRitual = (completedRitual: Ritual) => {
     setRituals(prev => prev.map(r => r.id === completedRitual.id ? completedRitual : r));
     setSelectedRitualForExecution(null);
+  };
+
+  // Desires Handlers (Phase 6)
+  const handleRateDesire = (desireId: string, rating: DesireRating) => {
+    setDesires(prev =>
+      prev.map(d => {
+        if (d.id !== desireId) return d;
+        return {
+          ...d,
+          participantResponses: {
+            ...d.participantResponses,
+            [CURRENT_USER.id]: {
+              userId: CURRENT_USER.id,
+              rating,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleCreateDesire = (newDesire: Desire) => {
+    setDesires(prev => [newDesire, ...prev]);
+  };
+
+  // Requests Handlers (Phase 6)
+  const handleRespondRequest = (
+    requestId: string,
+    action: 'accept' | 'decline' | 'discuss' | 'not_now',
+    note?: string
+  ) => {
+    setRequests(prev =>
+      prev.map(r => {
+        if (r.id !== requestId) return r;
+        const now = new Date().toISOString();
+        let newStatus = r.status;
+        let actionType: 'accepted' | 'declined' | 'discuss_requested' | 'not_now' = 'accepted';
+
+        if (action === 'accept') {
+          newStatus = 'accepted';
+          actionType = 'accepted';
+        } else if (action === 'decline') {
+          newStatus = 'declined';
+          actionType = 'declined';
+        } else if (action === 'discuss') {
+          newStatus = 'discussing';
+          actionType = 'discuss_requested';
+        } else if (action === 'not_now') {
+          newStatus = 'not_now';
+          actionType = 'not_now';
+        }
+
+        return {
+          ...r,
+          status: newStatus,
+          responseNote: note || r.responseNote,
+          history: [
+            ...r.history,
+            {
+              id: `h_${Date.now()}`,
+              timestamp: now,
+              actorId: CURRENT_USER.id,
+              action: actionType,
+              note,
+            },
+          ],
+          updatedAt: now,
+        };
+      })
+    );
+  };
+
+  const handleCounterProposeRequest = (
+    requestId: string,
+    modifiedTitle: string,
+    modifiedConditions: string,
+    modifiedDurationMinutes: number | undefined,
+    note: string
+  ) => {
+    setRequests(prev =>
+      prev.map(r => {
+        if (r.id !== requestId) return r;
+        const now = new Date().toISOString();
+        return {
+          ...r,
+          status: 'counter_proposed',
+          counterProposal: {
+            proposedById: CURRENT_USER.id,
+            proposedAt: now,
+            modifiedTitle,
+            modifiedConditions,
+            modifiedDurationMinutes,
+            note,
+          },
+          history: [
+            ...r.history,
+            {
+              id: `h_${Date.now()}`,
+              timestamp: now,
+              actorId: CURRENT_USER.id,
+              action: 'counter_proposed',
+              note: `Counter-proposed: ${note}`,
+            },
+          ],
+          updatedAt: now,
+        };
+      })
+    );
+  };
+
+  const handleCreateRequest = (newReq: HavenRequest) => {
+    setRequests(prev => [newReq, ...prev]);
+  };
+
+  // Tasks Handlers (Phase 6)
+  const handleToggleCompleteTask = (taskId: string) => {
+    setTasks(prev =>
+      prev.map(t => {
+        if (t.id !== taskId) return t;
+        const isDone = t.status === 'completed' || t.status === 'verified';
+        return {
+          ...t,
+          status: isDone ? 'pending' : 'completed',
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleSubmitProofTask = (taskId: string, proof: TaskProof) => {
+    setTasks(prev =>
+      prev.map(t => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          status: 'submitted',
+          proof,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleVerifyProofTask = (taskId: string, verificationNote?: string) => {
+    setTasks(prev =>
+      prev.map(t => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          status: 'verified',
+          proof: t.proof
+            ? {
+                ...t.proof,
+                verifiedAt: new Date().toISOString(),
+                verifiedById: CURRENT_USER.id,
+                verificationNote,
+              }
+            : undefined,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const handleCreateTask = (newTask: HavenTask) => {
+    setTasks(prev => [newTask, ...prev]);
   };
 
   // Derive counts & activity strictly from domain data
@@ -404,6 +602,18 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
   const activeAgreementsCount = currentRelAgreements.filter(a => a.status === 'active' || a.status === 'agreed').length;
   const pendingAgreementsCount = currentRelAgreements.filter(a => a.status === 'negotiating' || a.status === 'pending' || a.status === 'pending_approval' || a.status === 'draft').length;
   const pausedRetiredCount = currentRelAgreements.filter(a => a.status === 'paused' || a.status === 'retired' || a.status === 'declined' || a.status === 'revoked').length;
+
+  const isPositiveDesire = (r?: DesireRating) => r === 'eager' || r === 'curious' || r === 'exploring';
+  const currentRelDesires = selectedRelationship ? desires.filter(d => d.relationshipId === selectedRelationship.id && d.sharingMode !== 'private') : [];
+  const currentRelMutualDesires = currentRelDesires.filter(d => {
+    const myRating = d.participantResponses[CURRENT_USER.id]?.rating;
+    if (!isPositiveDesire(myRating)) return false;
+    return Object.values(d.participantResponses).some(resp => resp.userId !== CURRENT_USER.id && isPositiveDesire(resp.rating));
+  });
+  const currentRelRequests = selectedRelationship ? requests.filter(r => r.relationshipId === selectedRelationship.id) : [];
+  const pendingRelRequests = currentRelRequests.filter(r => r.status === 'pending' || r.status === 'counter_proposed');
+  const currentRelTasks = selectedRelationship ? tasks.filter(t => t.relationshipId === selectedRelationship.id) : [];
+  const pendingRelTasks = currentRelTasks.filter(t => t.status === 'pending' || t.status === 'submitted');
 
   const filteredRelAgreements = currentRelAgreements.filter(agr => {
     if (agreementFilter === 'active') return agr.status === 'active' || agr.status === 'agreed';
@@ -909,6 +1119,181 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
                     users={ALL_USERS}
                     currentUserId="usr_alex"
                     onClick={() => setSelectedAgreementForDetail(agr)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section: Shared Desires & Double-Blind Exploration (Phase 6) */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-[#d94f6f]" />
+                  <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
+                    Shared Desires &amp; Exploration ({currentRelDesires.length})
+                  </h3>
+                  {currentRelMutualDesires.length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-800/40 font-bold">
+                      {currentRelMutualDesires.length} Mutual Match{currentRelMutualDesires.length > 1 ? 'es' : ''}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#b59ebf] mt-0.5">
+                  Double-blind discovery reveals ideas only when partners express mutual curiosity. No consent is implied by desire.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDesireOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                  <span>Add Desire</span>
+                </button>
+              </div>
+            </div>
+
+            {currentRelDesires.length === 0 ? (
+              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                <p className="text-xs text-[#8d7596]">No shared desires recorded for this relationship yet.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDesireOpen(true)}
+                  className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                >
+                  Add a desire to explore with {selectedRelationship.name}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {currentRelDesires.map(desire => (
+                  <DesireCard
+                    key={desire.id}
+                    desire={desire}
+                    currentUser={CURRENT_USER}
+                    allUsers={ALL_USERS}
+                    onRateDesire={handleRateDesire}
+                    onProposeRequest={() => setIsCreateRequestOpen(true)}
+                    onDraftAgreement={() => setIsCreateAgreementOpen(true)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section: Requests & Formal Permissions (Phase 6) */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#d94f6f]" />
+                  <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
+                    Requests &amp; Formal Permissions ({currentRelRequests.length})
+                  </h3>
+                  {pendingRelRequests.length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-950/70 text-amber-400 border border-amber-800/40 font-bold">
+                      {pendingRelRequests.length} Pending
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#b59ebf] mt-0.5">
+                  Asynchronous proposals, chastity unlock requests, protocol waivers, and scene proposals with counter-offers.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCreateRequestOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5 self-start sm:self-center"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                <span>Propose Request</span>
+              </button>
+            </div>
+
+            {currentRelRequests.length === 0 ? (
+              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                <p className="text-xs text-[#8d7596]">No requests or permission inquiries in this relationship.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateRequestOpen(true)}
+                  className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                >
+                  Send a request to {selectedRelationship.name}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {currentRelRequests.map(req => (
+                  <RequestCard
+                    key={req.id}
+                    request={req}
+                    currentUser={CURRENT_USER}
+                    allUsers={ALL_USERS}
+                    onRespond={handleRespondRequest}
+                    onCounterPropose={handleCounterProposeRequest}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Section: Tasks & Daily Devotions (Phase 6) */}
+          <div className="p-6 rounded-2xl bg-[#1c1026] border border-[#251433] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ListChecks className="w-4 h-4 text-[#d94f6f]" />
+                  <h3 className="text-sm font-bold text-[#fae8d7] uppercase tracking-wider">
+                    Tasks &amp; Devotions ({currentRelTasks.length})
+                  </h3>
+                  {pendingRelTasks.length > 0 && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#d94f6f]/20 text-[#d94f6f] border border-[#d94f6f]/30 font-bold">
+                      {pendingRelTasks.length} Active
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[#b59ebf] mt-0.5">
+                  D/s assignments, domestic duties, hygiene protocols, and sensual devotions. No streak penalties or gamification.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCreateTaskOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#251433] hover:bg-[#321b44] text-[#fae8d7] border border-[#381e47] transition-colors flex items-center gap-1.5 self-start sm:self-center"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#d94f6f]" />
+                <span>Assign Task</span>
+              </button>
+            </div>
+
+            {currentRelTasks.length === 0 ? (
+              <div className="p-6 text-center rounded-xl bg-[#130b1a] border border-[#251433] space-y-2">
+                <p className="text-xs text-[#8d7596]">No tasks or devotions currently assigned for this relationship.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateTaskOpen(true)}
+                  className="text-xs text-[#d94f6f] font-semibold hover:underline"
+                >
+                  Assign a devotion or task for {selectedRelationship.name}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {currentRelTasks.map(t => (
+                  <TaskCard
+                    key={t.id}
+                    task={t}
+                    currentUser={CURRENT_USER}
+                    allUsers={ALL_USERS}
+                    onToggleComplete={handleToggleCompleteTask}
+                    onSubmitProof={handleSubmitProofTask}
+                    onVerifyProof={handleVerifyProofTask}
                   />
                 ))}
               </div>
@@ -1606,6 +1991,43 @@ export const RelationshipsTab: React.FC<RelationshipsTabProps> = ({
           onClose={() => setSelectedRitualForExecution(null)}
           currentUserId={CURRENT_USER.id}
           onCompleteRitual={handleCompleteRitual}
+        />
+      )}
+
+      {/* Desire Creation Modal */}
+      {isCreateDesireOpen && (
+        <DesireCreationModal
+          isOpen={isCreateDesireOpen}
+          onClose={() => setIsCreateDesireOpen(false)}
+          currentUser={CURRENT_USER}
+          relationships={relationships}
+          onCreateDesire={handleCreateDesire}
+        />
+      )}
+
+      {/* Request Creation Modal */}
+      {isCreateRequestOpen && (
+        <RequestCreationModal
+          isOpen={isCreateRequestOpen}
+          onClose={() => setIsCreateRequestOpen(false)}
+          currentUser={CURRENT_USER}
+          allUsers={ALL_USERS}
+          relationships={relationships}
+          dynamics={INITIAL_DYNAMICS}
+          onCreateRequest={handleCreateRequest}
+        />
+      )}
+
+      {/* Task Creation Modal */}
+      {isCreateTaskOpen && (
+        <TaskCreationModal
+          isOpen={isCreateTaskOpen}
+          onClose={() => setIsCreateTaskOpen(false)}
+          currentUser={CURRENT_USER}
+          allUsers={ALL_USERS}
+          relationships={relationships}
+          dynamics={INITIAL_DYNAMICS}
+          onCreateTask={handleCreateTask}
         />
       )}
     </div>

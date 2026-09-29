@@ -14,10 +14,14 @@ import { CouplesDynamicsTab } from '@/components/tabs/CouplesDynamicsTab';
 import { BoundariesTab } from '@/components/tabs/BoundariesTab';
 import { KnowledgeTab } from '@/components/tabs/KnowledgeTab';
 import { CommunitySection } from '@/components/CommunitySection';
+import { DesiresTab } from '@/components/tabs/DesiresTab';
+import { RequestsTab } from '@/components/tabs/RequestsTab';
+import { TasksTab } from '@/components/tabs/TasksTab';
 import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { EmergencyModal } from '@/components/EmergencyModal';
 import { StealthShield } from '@/components/StealthShield';
 import { Footer } from '@/components/Footer';
+import { INITIAL_HAVEN_REQUESTS, INITIAL_TASKS, CURRENT_USER } from '@/data/domainDemoData';
 
 export default function Home() {
   const [screenMode, setScreenMode] = useState<'splash' | 'onboarding' | 'app'>('splash');
@@ -83,6 +87,16 @@ export default function Home() {
             onToggleStealth={() => setIsStealthActive(true)}
             userRole={userRole}
             setUserRole={setUserRole}
+            pendingRequestsCount={
+              INITIAL_HAVEN_REQUESTS.filter(
+                r => r.recipientIds.includes(CURRENT_USER.id) && r.status === 'pending'
+              ).length
+            }
+            tasksDueCount={
+              INITIAL_TASKS.filter(
+                t => t.assignedToIds.includes(CURRENT_USER.id) && t.status !== 'completed' && t.status !== 'verified'
+              ).length
+            }
           />
 
           {/* Spacious Main Canvas */}
@@ -108,6 +122,27 @@ export default function Home() {
             {activeTab === 'dynamics' && (
               <DynamicsTab
                 initialDynamicId={selectedDynamicId}
+                onOpenEmergency={() => setIsEmergencyOpen(true)}
+              />
+            )}
+
+            {activeTab === 'desires' && (
+              <DesiresTab
+                onNavigateTab={setActiveTab}
+                onOpenEmergency={() => setIsEmergencyOpen(true)}
+              />
+            )}
+
+            {activeTab === 'requests' && (
+              <RequestsTab
+                onNavigateTab={setActiveTab}
+                onOpenEmergency={() => setIsEmergencyOpen(true)}
+              />
+            )}
+
+            {activeTab === 'tasks' && (
+              <TasksTab
+                onNavigateTab={setActiveTab}
                 onOpenEmergency={() => setIsEmergencyOpen(true)}
               />
             )}

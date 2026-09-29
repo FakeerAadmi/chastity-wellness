@@ -43,6 +43,7 @@ export function toCanonicalPermissionRequest(
     recipientIds,
     relationshipId,
     dynamicId,
+    requestMode: 'permission',
     requestType: legacy.type,
     title: legacy.typeLabel || legacy.type.replace('_', ' '),
     description: legacy.note,
@@ -80,6 +81,13 @@ export function toLegacyPermissionRequest(
     ? (canonical.requestType as LegacyPermissionRequest['type'])
     : 'comfort_adjustment';
 
+  const status: 'pending' | 'approved' | 'declined' =
+    canonical.status === 'accepted' || canonical.status === 'approved'
+      ? 'approved'
+      : canonical.status === 'declined' || canonical.status === 'withdrawn' || canonical.status === 'expired'
+      ? 'declined'
+      : 'pending';
+
   return {
     id: canonical.id,
     from: canonical.requesterId || fallbackFrom,
@@ -87,7 +95,7 @@ export function toLegacyPermissionRequest(
     typeLabel: canonical.title,
     note: canonical.description || '',
     durationMinutes: canonical.durationMinutes || 30,
-    status: canonical.status === 'withdrawn' || canonical.status === 'expired' ? 'declined' : canonical.status,
+    status,
     timestamp: canonical.createdAt,
   };
 }
