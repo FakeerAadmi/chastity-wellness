@@ -1,3 +1,5 @@
+export * from './domain';
+
 export interface GuideItem {
   id: string;
   title: string;
