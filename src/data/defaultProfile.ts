@@ -6,6 +6,10 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   username: 'Alex R.',
   handle: '@alex_explorer',
   pronouns: 'He/They',
+  sexuality: 'Bisexual',
+  genderIdentity: 'Non-Binary',
+  genderExpression: 'Androgynous',
+  relationshipStructure: 'Consensual Non-Monogamy (CNM)',
   role: 'Wearer',
   dynamicStatus: 'Active Partner Dynamic',
   bio: 'Exploring intimacy through sensual mindfulness and consensual control surrender. Believer in radical honesty, rigorous daily hygiene, and warm emotional aftercare.',
@@ -26,11 +30,12 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   // Intimacy, Kinks & Desires
   kinkTags: [
     'Sensual Tease & Denial',
-    'Consensual Power Exchange',
-    'Orgasm Control',
-    'Mindfulness Meditation',
-    'Affectionate Discipline',
-    'Lockbox Accountability'
+    'Consensual Power Exchange (D/s)',
+    'Orgasm Control & Edging',
+    'Mindfulness Meditation & Urge Surrender',
+    'Keyholding Dynamic',
+    'Lockbox Accountability',
+    'Praise Kink & Affirmation'
   ],
   experienceDuration: '8 Months Active Practice',
   intimacyStyle: 'Trust-based, slow build anticipation, transparent emotional communication.',
@@ -44,11 +49,12 @@ export const DEFAULT_USER_PROFILE: UserProfile = {
   hardLimits: [
     'No physical pain or tissue strangulation',
     'No public exposure or non-consensual outing',
-    'No skipping mandatory 24-hr hygiene shower',
-    'Immediate non-punitive release upon safeword'
+    'Strict daily 24-hr hygiene shower requirement',
+    'Immediate non-punitive release upon Safeword RED',
+    'No financial extortion or blackmail (FinDom)'
   ],
   softLimits: [
-    'Surprise / blind countdown timer extensions (requires 2-hr notice)',
+    'No lock extensions without prior discussion',
     'Overnight sleep wear (only after verified daytime nap test)',
     'Keyholder-assigned public mindfulness tasks'
   ],

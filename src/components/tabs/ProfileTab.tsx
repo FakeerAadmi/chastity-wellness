@@ -2,6 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { DEFAULT_USER_PROFILE } from '@/data/defaultProfile';
+import {
+  SEXUALITY_OPTIONS,
+  GENDER_IDENTITY_OPTIONS,
+  GENDER_EXPRESSION_OPTIONS,
+  RELATIONSHIP_STRUCTURE_OPTIONS,
+  KINKS_CATALOG,
+  LIMITS_CATALOG
+} from '@/data/inclusiveOptions';
 import { UserProfile } from '@/types';
 import {
   User,
@@ -25,14 +33,20 @@ import {
   Clock,
   Layers,
   HeartPulse,
-  CheckCircle2
+  CheckCircle2,
+  Users,
+  Compass,
+  Plus,
+  Trash2
 } from 'lucide-react';
 
 export const ProfileTab: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
-  const [activeSection, setActiveSection] = useState<'overview' | 'anatomy' | 'kinks' | 'limits'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'identity' | 'anatomy' | 'kinks' | 'limits'>('overview');
+  const [customKinkInput, setCustomKinkInput] = useState('');
+  const [customLimitInput, setCustomLimitInput] = useState('');
 
   // Load from localStorage if present
   useEffect(() => {
@@ -67,11 +81,52 @@ export const ProfileTab: React.FC = () => {
     downloadAnchor.remove();
   };
 
+  const toggleKink = (kink: string) => {
+    if (!isEditing) return;
+    setProfile(prev => {
+      const exists = prev.kinkTags.includes(kink);
+      return {
+        ...prev,
+        kinkTags: exists ? prev.kinkTags.filter(k => k !== kink) : [...prev.kinkTags, kink]
+      };
+    });
+  };
+
+  const addCustomKink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customKinkInput.trim()) return;
+    if (!profile.kinkTags.includes(customKinkInput.trim())) {
+      setProfile(prev => ({ ...prev, kinkTags: [...prev.kinkTags, customKinkInput.trim()] }));
+    }
+    setCustomKinkInput('');
+  };
+
+  const toggleHardLimit = (limit: string) => {
+    if (!isEditing) return;
+    setProfile(prev => {
+      const exists = prev.hardLimits.includes(limit);
+      return {
+        ...prev,
+        hardLimits: exists ? prev.hardLimits.filter(l => l !== limit) : [...prev.hardLimits, limit]
+      };
+    });
+  };
+
+  const toggleSoftLimit = (limit: string) => {
+    if (!isEditing) return;
+    setProfile(prev => {
+      const exists = prev.softLimits.includes(limit);
+      return {
+        ...prev,
+        softLimits: exists ? prev.softLimits.filter(l => l !== limit) : [...prev.softLimits, limit]
+      };
+    });
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-200">
       {/* Profile Header Hero Card */}
       <div className="p-6 sm:p-8 rounded-3xl bg-[#1c1026] border border-[#381e47] shadow-xl relative overflow-hidden space-y-6">
-        {/* Subtle ambient lighting */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#d94f6f]/15 to-[#7c3aed]/10 blur-3xl pointer-events-none rounded-full" />
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -92,6 +147,9 @@ export const ProfileTab: React.FC = () => {
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#0f0714] text-[#b59ebf] border border-[#381e47]">
                   {profile.pronouns}
                 </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-[#251433] text-purple-300 border border-purple-800/60">
+                  {profile.genderIdentity}
+                </span>
               </div>
 
               <p className="text-xs text-[#b59ebf] flex items-center gap-3 flex-wrap">
@@ -101,11 +159,11 @@ export const ProfileTab: React.FC = () => {
                 </span>
                 <span>&bull;</span>
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-[#b59ebf]" />
-                  Joined {profile.joinedDate}
+                  <Heart className="w-3.5 h-3.5 text-[#d94f6f]" />
+                  {profile.sexuality}
                 </span>
                 <span>&bull;</span>
-                <span className="text-emerald-400 font-semibold">{profile.dynamicStatus}</span>
+                <span className="text-emerald-400 font-semibold">{profile.relationshipStructure}</span>
               </p>
             </div>
           </div>
@@ -219,23 +277,35 @@ export const ProfileTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Profile Section Navigation */}
-      <div className="flex items-center justify-center gap-2 p-1.5 bg-[#1c1026] border border-[#381e47] rounded-2xl max-w-lg mx-auto text-xs font-semibold">
+      {/* Profile Section Navigation Tabs */}
+      <div className="flex items-center justify-center gap-1.5 p-1.5 bg-[#1c1026] border border-[#381e47] rounded-2xl max-w-2xl mx-auto text-xs font-semibold flex-wrap">
         <button
           onClick={() => setActiveSection('overview')}
-          className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-3.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
             activeSection === 'overview'
               ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50 shadow-xs'
               : 'text-[#b59ebf] hover:text-[#fae8d7]'
           }`}
         >
           <User className="w-3.5 h-3.5 text-[#d94f6f]" />
-          <span>Identity</span>
+          <span>Overview</span>
+        </button>
+
+        <button
+          onClick={() => setActiveSection('identity')}
+          className={`py-2 px-3.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+            activeSection === 'identity'
+              ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50 shadow-xs'
+              : 'text-[#b59ebf] hover:text-[#fae8d7]'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-[#d94f6f]" />
+          <span>Sexuality & Gender</span>
         </button>
 
         <button
           onClick={() => setActiveSection('anatomy')}
-          className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-3.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
             activeSection === 'anatomy'
               ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50 shadow-xs'
               : 'text-[#b59ebf] hover:text-[#fae8d7]'
@@ -247,7 +317,7 @@ export const ProfileTab: React.FC = () => {
 
         <button
           onClick={() => setActiveSection('kinks')}
-          className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-3.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
             activeSection === 'kinks'
               ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50 shadow-xs'
               : 'text-[#b59ebf] hover:text-[#fae8d7]'
@@ -259,7 +329,7 @@ export const ProfileTab: React.FC = () => {
 
         <button
           onClick={() => setActiveSection('limits')}
-          className={`flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
+          className={`py-2 px-3.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
             activeSection === 'limits'
               ? 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/50 shadow-xs'
               : 'text-[#b59ebf] hover:text-[#fae8d7]'
@@ -270,74 +340,39 @@ export const ProfileTab: React.FC = () => {
         </button>
       </div>
 
-      {/* SECTION 1: IDENTITY & BASIC PROFILE */}
+      {/* SECTION: OVERVIEW */}
       {activeSection === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-6 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-4">
             <h2 className="text-sm font-bold uppercase tracking-wider text-[#fae8d7] flex items-center gap-2">
               <User className="w-4 h-4 text-[#d94f6f]" />
-              <span>Identity & Preferences</span>
+              <span>Identity Summary</span>
             </h2>
 
             <div className="space-y-3 text-xs">
-              <div>
-                <span className="text-[#b59ebf] block">Display Name</span>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={profile.username}
-                    onChange={e => setProfile({ ...profile, username: e.target.value })}
-                    className="w-full p-2 mt-1 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7]"
-                  />
-                ) : (
-                  <span className="font-bold text-sm text-[#fae8d7]">{profile.username}</span>
-                )}
+              <div className="flex justify-between items-center py-1.5 border-b border-[#251433]">
+                <span className="text-[#b59ebf]">Display Name</span>
+                <span className="font-bold text-[#fae8d7]">{profile.username}</span>
               </div>
-
-              <div>
-                <span className="text-[#b59ebf] block">Pronouns</span>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={profile.pronouns}
-                    onChange={e => setProfile({ ...profile, pronouns: e.target.value })}
-                    className="w-full p-2 mt-1 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7]"
-                  />
-                ) : (
-                  <span className="font-medium text-[#fae8d7]">{profile.pronouns}</span>
-                )}
+              <div className="flex justify-between items-center py-1.5 border-b border-[#251433]">
+                <span className="text-[#b59ebf]">Pronouns</span>
+                <span className="font-medium text-[#fae8d7]">{profile.pronouns}</span>
               </div>
-
-              <div>
-                <span className="text-[#b59ebf] block">Dynamic Role</span>
-                {isEditing ? (
-                  <select
-                    value={profile.role}
-                    onChange={e => setProfile({ ...profile, role: e.target.value as any })}
-                    className="w-full p-2 mt-1 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7]"
-                  >
-                    <option value="Wearer">Wearer</option>
-                    <option value="Keyholder">Keyholder</option>
-                    <option value="Switch">Switch</option>
-                    <option value="Explorer">Explorer</option>
-                  </select>
-                ) : (
-                  <span className="font-bold text-[#d94f6f]">{profile.role}</span>
-                )}
+              <div className="flex justify-between items-center py-1.5 border-b border-[#251433]">
+                <span className="text-[#b59ebf]">Sexuality</span>
+                <span className="font-bold text-[#d94f6f]">{profile.sexuality}</span>
               </div>
-
-              <div>
-                <span className="text-[#b59ebf] block">Location</span>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={profile.location}
-                    onChange={e => setProfile({ ...profile, location: e.target.value })}
-                    className="w-full p-2 mt-1 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7]"
-                  />
-                ) : (
-                  <span className="font-medium text-[#fae8d7]">{profile.location}</span>
-                )}
+              <div className="flex justify-between items-center py-1.5 border-b border-[#251433]">
+                <span className="text-[#b59ebf]">Gender Identity</span>
+                <span className="font-medium text-[#fae8d7]">{profile.genderIdentity}</span>
+              </div>
+              <div className="flex justify-between items-center py-1.5 border-b border-[#251433]">
+                <span className="text-[#b59ebf]">Gender Expression</span>
+                <span className="font-medium text-[#fae8d7]">{profile.genderExpression}</span>
+              </div>
+              <div className="flex justify-between items-center py-1.5">
+                <span className="text-[#b59ebf]">Relationship Dynamic</span>
+                <span className="font-bold text-emerald-400">{profile.relationshipStructure}</span>
               </div>
             </div>
           </div>
@@ -377,7 +412,112 @@ export const ProfileTab: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION 2: ANATOMY & SIZING DOSSIER */}
+      {/* SECTION: SEXUALITY, GENDER & INCLUSIVITY */}
+      {activeSection === 'identity' && (
+        <div className="p-6 sm:p-8 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-6">
+          <div className="border-b border-[#251433] pb-3">
+            <h2 className="text-base font-bold text-[#fae8d7] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#d94f6f]" />
+              <span>Inclusive Identity, Expression & Dynamics</span>
+            </h2>
+            <p className="text-xs text-[#b59ebf]">
+              Chastity, power exchange, and intimacy embrace all gender identities, sexualities, and relationship forms.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+            {/* Sexuality Picker */}
+            <div className="space-y-2">
+              <label className="font-bold text-[#fae8d7] uppercase tracking-wider block">
+                Sexual & Romantic Orientation
+              </label>
+              {isEditing ? (
+                <select
+                  value={profile.sexuality}
+                  onChange={e => setProfile({ ...profile, sexuality: e.target.value })}
+                  className="w-full p-3 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7] focus:outline-none focus:ring-1 focus:ring-[#d94f6f]"
+                >
+                  {SEXUALITY_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="p-3 rounded-2xl bg-[#0f0714] border border-[#381e47] font-semibold text-[#d94f6f]">
+                  {profile.sexuality}
+                </div>
+              )}
+            </div>
+
+            {/* Gender Identity Picker */}
+            <div className="space-y-2">
+              <label className="font-bold text-[#fae8d7] uppercase tracking-wider block">
+                Gender Identity
+              </label>
+              {isEditing ? (
+                <select
+                  value={profile.genderIdentity}
+                  onChange={e => setProfile({ ...profile, genderIdentity: e.target.value })}
+                  className="w-full p-3 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7] focus:outline-none focus:ring-1 focus:ring-[#d94f6f]"
+                >
+                  {GENDER_IDENTITY_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="p-3 rounded-2xl bg-[#0f0714] border border-[#381e47] font-semibold text-[#fae8d7]">
+                  {profile.genderIdentity}
+                </div>
+              )}
+            </div>
+
+            {/* Gender Expression Picker */}
+            <div className="space-y-2">
+              <label className="font-bold text-[#fae8d7] uppercase tracking-wider block">
+                Gender Expression
+              </label>
+              {isEditing ? (
+                <select
+                  value={profile.genderExpression}
+                  onChange={e => setProfile({ ...profile, genderExpression: e.target.value })}
+                  className="w-full p-3 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7] focus:outline-none focus:ring-1 focus:ring-[#d94f6f]"
+                >
+                  {GENDER_EXPRESSION_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="p-3 rounded-2xl bg-[#0f0714] border border-[#381e47] font-semibold text-[#fae8d7]">
+                  {profile.genderExpression}
+                </div>
+              )}
+            </div>
+
+            {/* Relationship Structure Picker */}
+            <div className="space-y-2">
+              <label className="font-bold text-[#fae8d7] uppercase tracking-wider block">
+                Relationship Dynamic Structure
+              </label>
+              {isEditing ? (
+                <select
+                  value={profile.relationshipStructure}
+                  onChange={e => setProfile({ ...profile, relationshipStructure: e.target.value })}
+                  className="w-full p-3 rounded-xl border border-[#381e47] bg-[#0f0714] text-[#fae8d7] focus:outline-none focus:ring-1 focus:ring-[#d94f6f]"
+                >
+                  {RELATIONSHIP_STRUCTURE_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="p-3 rounded-2xl bg-[#0f0714] border border-[#381e47] font-semibold text-emerald-400">
+                  {profile.relationshipStructure}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION: ANATOMY & SIZING DOSSIER */}
       {activeSection === 'anatomy' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-6 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-4">
@@ -447,21 +587,50 @@ export const ProfileTab: React.FC = () => {
             <div className="grid grid-cols-3 gap-2.5 text-center text-xs">
               <div className="p-3 bg-[#0f0714] rounded-2xl border border-[#381e47]">
                 <span className="text-[10px] text-[#b59ebf] block">Ring Diameter</span>
-                <span className="font-mono text-lg font-black text-[#d94f6f]">
-                  {profile.baseRingDiameterMm} mm
-                </span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={profile.baseRingDiameterMm}
+                    onChange={e => setProfile({ ...profile, baseRingDiameterMm: parseInt(e.target.value) || 45 })}
+                    className="w-full p-1 mt-1 font-mono text-center rounded bg-[#1c1026] text-[#d94f6f]"
+                  />
+                ) : (
+                  <span className="font-mono text-lg font-black text-[#d94f6f]">
+                    {profile.baseRingDiameterMm} mm
+                  </span>
+                )}
               </div>
+
               <div className="p-3 bg-[#0f0714] rounded-2xl border border-[#381e47]">
                 <span className="text-[10px] text-[#b59ebf] block">Cage Depth</span>
-                <span className="font-mono text-lg font-black text-[#fae8d7]">
-                  {profile.cageLengthDepthMm} mm
-                </span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={profile.cageLengthDepthMm}
+                    onChange={e => setProfile({ ...profile, cageLengthDepthMm: parseInt(e.target.value) || 65 })}
+                    className="w-full p-1 mt-1 font-mono text-center rounded bg-[#1c1026] text-[#fae8d7]"
+                  />
+                ) : (
+                  <span className="font-mono text-lg font-black text-[#fae8d7]">
+                    {profile.cageLengthDepthMm} mm
+                  </span>
+                )}
               </div>
+
               <div className="p-3 bg-[#0f0714] rounded-2xl border border-[#381e47]">
                 <span className="text-[10px] text-[#b59ebf] block">Spacer Pin</span>
-                <span className="font-mono text-lg font-black text-[#fae8d7]">
-                  {profile.spacerPreferenceMm} mm
-                </span>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    value={profile.spacerPreferenceMm}
+                    onChange={e => setProfile({ ...profile, spacerPreferenceMm: parseInt(e.target.value) || 5 })}
+                    className="w-full p-1 mt-1 font-mono text-center rounded bg-[#1c1026] text-[#fae8d7]"
+                  />
+                ) : (
+                  <span className="font-mono text-lg font-black text-[#fae8d7]">
+                    {profile.spacerPreferenceMm} mm
+                  </span>
+                )}
               </div>
             </div>
 
@@ -498,62 +667,102 @@ export const ProfileTab: React.FC = () => {
         </div>
       )}
 
-      {/* SECTION 3: KINKS, DESIRES & INTIMACY */}
+      {/* SECTION: KINKS & DESIRES CATALOG */}
       {activeSection === 'kinks' && (
         <div className="space-y-6">
           <div className="p-6 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-4">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[#fae8d7] flex items-center gap-2">
-              <Flame className="w-4 h-4 text-[#d94f6f]" />
-              <span>Core Kinks, Dynamic Desires & Tags</span>
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#251433] pb-3">
+              <div>
+                <h2 className="text-base font-bold text-[#fae8d7] flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-[#d94f6f]" />
+                  <span>My Active Kinks & Desires ({profile.kinkTags.length})</span>
+                </h2>
+                <p className="text-xs text-[#b59ebf]">
+                  {isEditing ? 'Click any tag below to add or remove it from your profile.' : 'Items currently on your profile.'}
+                </p>
+              </div>
 
+              {isEditing && (
+                <form onSubmit={addCustomKink} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add custom kink..."
+                    value={customKinkInput}
+                    onChange={e => setCustomKinkInput(e.target.value)}
+                    className="px-3 py-1.5 rounded-xl border border-[#381e47] bg-[#0f0714] text-xs text-[#fae8d7] focus:outline-none focus:ring-1 focus:ring-[#d94f6f]"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 rounded-xl bg-[#251433] hover:bg-[#381e47] text-[#d94f6f] border border-[#4a2c59] text-xs font-bold"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {/* Active Tags */}
             <div className="flex flex-wrap gap-2 pt-1">
               {profile.kinkTags.map((tag, i) => (
-                <span
+                <button
                   key={i}
-                  className="px-3.5 py-1.5 rounded-2xl bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/40 text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+                  type="button"
+                  onClick={() => toggleKink(tag)}
+                  className={`px-3.5 py-1.5 rounded-2xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    isEditing
+                      ? 'bg-[#d94f6f] text-white hover:bg-rose-700 shadow-sm'
+                      : 'bg-[#251433] text-[#fae8d7] border border-[#d94f6f]/40 shadow-sm'
+                  }`}
                 >
-                  <Sparkles className="w-3 h-3 text-[#d94f6f]" />
+                  <Sparkles className="w-3 h-3 text-[#d94f6f] text-white" />
                   <span>{tag}</span>
-                </span>
+                  {isEditing && <X className="w-3 h-3 ml-1" />}
+                </button>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-3 text-xs">
-              <h3 className="font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                <Heart className="w-4 h-4 text-[#d94f6f]" />
-                <span>Intimacy & Communication Style</span>
-              </h3>
-              <p className="text-[#b59ebf] leading-relaxed">
-                {profile.intimacyStyle}
-              </p>
-              <div className="pt-2">
-                <span className="text-[#b59ebf] block">Experience Milestone:</span>
-                <span className="font-bold text-[#fae8d7]">{profile.experienceDuration}</span>
-              </div>
-            </div>
+          {/* Full Kink Catalog */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#b59ebf] pl-1">
+              Explore & Select From Complete Kink Catalog {isEditing ? '(Click to toggle)' : ''}
+            </h3>
 
-            <div className="p-6 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-3 text-xs">
-              <h3 className="font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2">
-                <HeartPulse className="w-4 h-4 text-emerald-400" />
-                <span>Personal Aftercare Rituals</span>
-              </h3>
-              <ul className="space-y-1.5 text-[#b59ebf]">
-                {profile.aftercarePreferences.map((care, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#d94f6f] shrink-0 mt-0.5" />
-                    <span>{care}</span>
-                  </li>
-                ))}
-              </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {KINKS_CATALOG.map((cat, idx) => (
+                <div key={idx} className="p-5 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-3 text-xs">
+                  <h4 className="font-bold text-[#fae8d7] border-b border-[#251433] pb-2">
+                    {cat.category}
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {cat.items.map((item, itemIdx) => {
+                      const isSelected = profile.kinkTags.includes(item);
+                      return (
+                        <button
+                          key={itemIdx}
+                          type="button"
+                          disabled={!isEditing}
+                          onClick={() => toggleKink(item)}
+                          className={`px-2.5 py-1 rounded-xl text-[11px] font-medium transition-all ${
+                            isSelected
+                              ? 'bg-[#d94f6f] text-white shadow-xs'
+                              : 'bg-[#0f0714] text-[#b59ebf] border border-[#381e47] hover:border-[#4a2c59]'
+                          } ${isEditing ? 'cursor-pointer' : 'cursor-default'}`}
+                        >
+                          {isSelected && '✓ '}
+                          {item}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
-      {/* SECTION 4: LIMITS & SAFEGUARDS */}
+      {/* SECTION: LIMITS & SAFEGUARDS */}
       {activeSection === 'limits' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -570,9 +779,13 @@ export const ProfileTab: React.FC = () => {
                 {profile.hardLimits.map((limit, i) => (
                   <div
                     key={i}
-                    className="p-3 rounded-xl bg-rose-950/30 border border-rose-900/50 text-xs text-rose-200 font-medium"
+                    onClick={() => toggleHardLimit(limit)}
+                    className={`p-3 rounded-xl bg-rose-950/30 border border-rose-900/50 text-xs text-rose-200 font-medium flex items-center justify-between ${
+                      isEditing ? 'cursor-pointer hover:bg-rose-900/40' : ''
+                    }`}
                   >
-                    &bull; {limit}
+                    <span>&bull; {limit}</span>
+                    {isEditing && <X className="w-3.5 h-3.5 text-rose-400" />}
                   </div>
                 ))}
               </div>
@@ -591,55 +804,74 @@ export const ProfileTab: React.FC = () => {
                 {profile.softLimits.map((limit, i) => (
                   <div
                     key={i}
-                    className="p-3 rounded-xl bg-amber-950/30 border border-amber-900/50 text-xs text-amber-200 font-medium"
+                    onClick={() => toggleSoftLimit(limit)}
+                    className={`p-3 rounded-xl bg-amber-950/30 border border-amber-900/50 text-xs text-amber-200 font-medium flex items-center justify-between ${
+                      isEditing ? 'cursor-pointer hover:bg-amber-900/40' : ''
+                    }`}
                   >
-                    &bull; {limit}
+                    <span>&bull; {limit}</span>
+                    {isEditing && <X className="w-3.5 h-3.5 text-amber-400" />}
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Active Safewords & Emergency Key Card */}
-          <div className="p-6 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-4 text-xs">
-            <h3 className="font-bold text-[#fae8d7] uppercase tracking-wider flex items-center gap-2 text-sm">
-              <Key className="w-4 h-4 text-[#d94f6f]" />
-              <span>Active Safewords & Physical Key Location</span>
+          {/* Full Limits Catalog for selection */}
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#b59ebf] pl-1">
+              Select Limits From Standard Catalog {isEditing ? '(Click Red for Hard Limit, Yellow for Soft Limit)' : ''}
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-4 rounded-2xl bg-[#0f0714] border border-rose-900/60 space-y-1">
-                <span className="text-[10px] text-rose-400 uppercase font-bold block">
-                  Safeword RED (Immediate Stop)
-                </span>
-                <span className="font-mono text-lg font-black text-rose-300">
-                  {profile.safewordRed}
-                </span>
-                <span className="text-[10px] text-[#b59ebf] block">
-                  Device must be removed immediately without discussion.
-                </span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#0f0714] border border-amber-900/60 space-y-1">
-                <span className="text-[10px] text-amber-400 uppercase font-bold block">
-                  Safeword YELLOW (Check-in / Adjust)
-                </span>
-                <span className="font-mono text-lg font-black text-amber-300">
-                  {profile.safewordYellow}
-                </span>
-                <span className="text-[10px] text-[#b59ebf] block">
-                  Slow down, inspect physical comfort or reduce intensity.
-                </span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#0f0714] border border-[#381e47] space-y-1">
-                <span className="text-[10px] text-[#b59ebf] uppercase font-bold block">
-                  Emergency Physical Key
-                </span>
-                <p className="text-xs text-[#fae8d7] font-medium leading-relaxed">
-                  {profile.emergencyKeyLocation}
-                </p>
-              </div>
+            <div className="space-y-4">
+              {LIMITS_CATALOG.map((cat, idx) => (
+                <div key={idx} className="p-5 rounded-3xl bg-[#1c1026] border border-[#381e47] space-y-3 text-xs">
+                  <h4 className="font-bold text-[#fae8d7] border-b border-[#251433] pb-2">
+                    {cat.category}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {cat.items.map((item, itemIdx) => {
+                      const isHard = profile.hardLimits.includes(item);
+                      const isSoft = profile.softLimits.includes(item);
+                      return (
+                        <div
+                          key={itemIdx}
+                          className="p-2.5 rounded-xl bg-[#0f0714] border border-[#381e47] flex items-center justify-between gap-2"
+                        >
+                          <span className="text-[11px] text-[#fae8d7]">{item}</span>
+                          {isEditing ? (
+                            <div className="flex gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => toggleHardLimit(item)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isHard ? 'bg-rose-600 text-white' : 'bg-[#251433] text-rose-300'
+                                }`}
+                              >
+                                Hard
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => toggleSoftLimit(item)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isSoft ? 'bg-amber-600 text-white' : 'bg-[#251433] text-amber-300'
+                                }`}
+                              >
+                                Soft
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] font-bold shrink-0">
+                              {isHard && <span className="text-rose-400">Hard Limit</span>}
+                              {isSoft && <span className="text-amber-400">Soft Limit</span>}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

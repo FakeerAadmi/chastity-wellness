@@ -10,7 +10,9 @@ import {
   MessageSquare,
   AlertTriangle,
   User,
-  LogOut
+  LogOut,
+  Sparkles,
+  EyeOff
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -19,6 +21,7 @@ interface HeaderProps {
   onOpenEmergency: () => void;
   onOpenOnboarding: () => void;
   onReturnToSplash: () => void;
+  onToggleStealth: () => void;
   userRole: 'Wearer' | 'Keyholder' | 'Explorer';
   setUserRole: (role: 'Wearer' | 'Keyholder' | 'Explorer') => void;
 }
@@ -29,16 +32,18 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenEmergency,
   onOpenOnboarding,
   onReturnToSplash,
+  onToggleStealth,
   userRole,
   setUserRole
 }) => {
   const tabs = [
     { id: 'vault', label: 'Lock Vault', icon: Key },
     { id: 'rituals', label: 'Dynamic Rituals', icon: Heart },
+    { id: 'dynamics', label: 'Couples Hub', icon: Sparkles },
     { id: 'boundaries', label: 'Boundary Matrix', icon: FileSpreadsheet },
     { id: 'guides', label: 'Guides & Sizing', icon: BookOpen },
     { id: 'community', label: 'Peer Sanctuary', icon: MessageSquare },
-    { id: 'profile', label: 'My Dossier & Profile', icon: User },
+    { id: 'profile', label: 'Dossier', icon: User },
   ];
 
   return (
@@ -65,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Navigation Tabs (Desktop) */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -87,7 +92,7 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Actions & Role Selector */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {/* Perspective Picker */}
             <div className="hidden sm:flex items-center bg-[#1c1026] p-1 rounded-xl border border-[#381e47] text-[11px] font-semibold">
               {(['Wearer', 'Keyholder', 'Explorer'] as const).map(role => (
@@ -105,13 +110,22 @@ export const Header: React.FC<HeaderProps> = ({
               ))}
             </div>
 
+            {/* Stealth Privacy Shield */}
+            <button
+              onClick={onToggleStealth}
+              className="p-2 rounded-xl text-[#b59ebf] hover:text-[#fae8d7] hover:bg-[#1c1026] border border-[#381e47] transition-colors"
+              title="Stealth Mode: Hide screen instantly behind spreadsheet"
+            >
+              <EyeOff className="w-4 h-4" />
+            </button>
+
             {/* Emergency Protocol Button */}
             <button
               onClick={onOpenEmergency}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-300 bg-rose-950/60 border border-rose-800/80 hover:bg-rose-900/60 transition-colors shadow-xs"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-              <span>Emergency</span>
+              <span className="hidden sm:inline">Emergency</span>
             </button>
 
             {/* Exit/Splash Trigger */}
@@ -126,12 +140,12 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Mobile Navigation bar */}
-        <div className="flex md:hidden items-center justify-around py-2 border-t border-[#251433] text-[11px]">
+        <div className="flex lg:hidden items-center justify-around py-2 border-t border-[#251433] text-[10px] overflow-x-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-1 px-2 rounded-lg font-semibold ${
+              className={`py-1 px-2 rounded-lg font-semibold shrink-0 ${
                 activeTab === tab.id ? 'text-[#d94f6f] bg-[#251433]' : 'text-[#b59ebf]'
               }`}
             >

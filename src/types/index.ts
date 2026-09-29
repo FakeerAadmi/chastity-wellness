@@ -68,39 +68,54 @@ export interface UserProfile {
   username: string;
   handle: string;
   pronouns: string;
+  sexuality: string;
+  genderIdentity: string;
+  genderExpression: string;
+  relationshipStructure: string;
   role: 'Wearer' | 'Keyholder' | 'Switch' | 'Explorer';
-  dynamicStatus: 'Active Partner Dynamic' | 'Seeking Keyholder' | 'Seeking Wearer' | 'Solo Practice';
+  dynamicStatus: 'Active Partner Dynamic' | 'Seeking Keyholder' | 'Seeking Wearer' | 'Solo Practice' | 'Polyamorous Dynamic';
   bio: string;
   location: string;
   joinedDate: string;
   partnerCode: string;
 
   // Physical & Anatomical Measurements
-  height: string; // e.g. "5 ft 10 in (178 cm)"
-  weight: string; // e.g. "165 lbs (75 kg)"
+  height: string;
+  weight: string;
   bodyBuild: 'Athletic' | 'Average' | 'Slim' | 'Muscular' | 'Heavy' | 'Custom';
-  baseRingDiameterMm: number; // e.g. 45
-  cageLengthDepthMm: number; // e.g. 65
-  spacerPreferenceMm: number; // e.g. 5
-  preferredMaterials: string[]; // e.g. ["316L Surgical Steel", "Platinum Silicone"]
-  skinAllergies: string[]; // e.g. ["Nickel Sensitive", "Latex Sensitive"]
+  baseRingDiameterMm: number;
+  cageLengthDepthMm: number;
+  spacerPreferenceMm: number;
+  preferredMaterials: string[];
+  skinAllergies: string[];
 
   // Intimacy, Kinks & Desires
-  kinkTags: string[]; // e.g. ["Tease & Denial", "Sensual Surrender", "Mindfulness", "D/s"]
-  experienceDuration: string; // e.g. "8 months active"
-  intimacyStyle: string; // e.g. "Affectionate, sensual, communication-heavy"
-  aftercarePreferences: string[]; // e.g. ["Warm tea & hydration", "Quiet physical cuddle", "Non-judgmental debrief"]
+  kinkTags: string[];
+  experienceDuration: string;
+  intimacyStyle: string;
+  aftercarePreferences: string[];
 
   // Limits & Safeguards
-  hardLimits: string[]; // e.g. ["No public exposure", "No pain", "No degradation"]
-  softLimits: string[]; // e.g. ["Blind timers", "Overnight sleep wear with notice"]
-  safewordRed: string; // e.g. "RED"
-  safewordYellow: string; // e.g. "YELLOW"
-  emergencyKeyLocation: string; // e.g. "Tamper-evident sealed box on dresser"
+  hardLimits: string[];
+  softLimits: string[];
+  safewordRed: string;
+  safewordYellow: string;
+  emergencyKeyLocation: string;
 
   // Dynamic Statistics
   totalHoursWorn: number;
   completedSessions: number;
-  hygieneComplianceRate: number; // e.g. 99
+  hygieneComplianceRate: number;
   dailyPulsesSubmitted: number;
+}
+
+export interface PermissionRequest {
+  id: string;
+  from: string;
+  type: 'shower_clean' | 'sports_release' | 'edging_session' | 'comfort_adjustment' | 'early_release';
+  typeLabel: string;
+  note: string;
+  durationMinutes: number;
+  status: 'pending' | 'approved' | 'declined';
+  timestamp: string;
 }

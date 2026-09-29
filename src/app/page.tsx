@@ -6,17 +6,20 @@ import { OnboardingScreen } from '@/components/screens/OnboardingScreen';
 import { Header } from '@/components/Header';
 import { VaultTab } from '@/components/tabs/VaultTab';
 import { RitualsTab } from '@/components/tabs/RitualsTab';
+import { CouplesDynamicsTab } from '@/components/tabs/CouplesDynamicsTab';
 import { BoundariesTab } from '@/components/tabs/BoundariesTab';
 import { KnowledgeTab } from '@/components/tabs/KnowledgeTab';
 import { CommunitySection } from '@/components/CommunitySection';
 import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { EmergencyModal } from '@/components/EmergencyModal';
+import { StealthShield } from '@/components/StealthShield';
 import { Footer } from '@/components/Footer';
 
 export default function Home() {
   const [screenMode, setScreenMode] = useState<'splash' | 'onboarding' | 'app'>('splash');
   const [activeTab, setActiveTab] = useState<string>('vault');
   const [isEmergencyOpen, setIsEmergencyOpen] = useState<boolean>(false);
+  const [isStealthActive, setIsStealthActive] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<'Wearer' | 'Keyholder' | 'Explorer'>('Wearer');
 
   // Check if user has previously completed onboarding
@@ -34,6 +37,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0f0714] text-[#fae8d7] selection:bg-[#d94f6f]/30 selection:text-[#fae8d7]">
+      {/* Discreet Stealth Shield for Immediate Privacy */}
+      <StealthShield
+        isActive={isStealthActive}
+        onDeactivate={() => setIsStealthActive(false)}
+      />
+
       {/* Universal Emergency Removal & Harm-Reduction Modal */}
       <EmergencyModal
         isOpen={isEmergencyOpen}
@@ -66,6 +75,7 @@ export default function Home() {
             onOpenEmergency={() => setIsEmergencyOpen(true)}
             onOpenOnboarding={() => setScreenMode('onboarding')}
             onReturnToSplash={() => setScreenMode('splash')}
+            onToggleStealth={() => setIsStealthActive(true)}
             userRole={userRole}
             setUserRole={setUserRole}
           />
@@ -77,6 +87,8 @@ export default function Home() {
             )}
 
             {activeTab === 'rituals' && <RitualsTab />}
+
+            {activeTab === 'dynamics' && <CouplesDynamicsTab />}
 
             {activeTab === 'boundaries' && <BoundariesTab />}
 
