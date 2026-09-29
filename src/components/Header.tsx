@@ -12,7 +12,9 @@ import {
   User,
   LogOut,
   Sparkles,
-  EyeOff
+  EyeOff,
+  Users,
+  Compass
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -37,13 +39,12 @@ export const Header: React.FC<HeaderProps> = ({
   setUserRole
 }) => {
   const tabs = [
-    { id: 'vault', label: 'Lock Vault', icon: Key },
-    { id: 'rituals', label: 'Dynamic Rituals', icon: Heart },
-    { id: 'dynamics', label: 'Couples Hub', icon: Sparkles },
-    { id: 'boundaries', label: 'Boundary Matrix', icon: FileSpreadsheet },
-    { id: 'guides', label: 'Guides & Sizing', icon: BookOpen },
-    { id: 'community', label: 'Peer Sanctuary', icon: MessageSquare },
-    { id: 'profile', label: 'Dossier', icon: User },
+    { id: 'today', label: 'Today', icon: Sparkles },
+    { id: 'relationships', label: 'Relationships', icon: Users },
+    { id: 'dynamics', label: 'Dynamics', icon: Heart },
+    { id: 'explore', label: 'Explore', icon: Compass },
+    { id: 'community', label: 'Community', icon: MessageSquare },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (

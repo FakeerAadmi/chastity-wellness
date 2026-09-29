@@ -42,34 +42,34 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-1.5 text-xs">
               <li>
                 <button
-                  onClick={() => onSelectTab('vault')}
+                  onClick={() => onSelectTab('today')}
                   className="hover:text-[#d94f6f] transition-colors"
                 >
-                  Lock Vault & Countdown
+                  Today Dashboard
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => onSelectTab('rituals')}
+                  onClick={() => onSelectTab('relationships')}
                   className="hover:text-[#d94f6f] transition-colors"
                 >
-                  Dynamic Rituals & Tasks
+                  Relationships Matrix
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => onSelectTab('boundaries')}
+                  onClick={() => onSelectTab('dynamics')}
                   className="hover:text-[#d94f6f] transition-colors"
                 >
-                  Boundary & Consent Matrix
+                  Dynamics & Practices
                 </button>
               </li>
               <li>
                 <button
-                  onClick={() => onSelectTab('guides')}
+                  onClick={() => onSelectTab('explore')}
                   className="hover:text-[#d94f6f] transition-colors"
                 >
-                  Guides, Hygiene & Sizing
+                  Explore Toolboxes
                 </button>
               </li>
               <li>
@@ -78,6 +78,14 @@ export const Footer: React.FC<FooterProps> = ({
                   className="hover:text-[#d94f6f] transition-colors"
                 >
                   Peer Community Sanctuary
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onSelectTab('profile')}
+                  className="hover:text-[#d94f6f] transition-colors"
+                >
+                  User Profile & Dossier
                 </button>
               </li>
             </ul>

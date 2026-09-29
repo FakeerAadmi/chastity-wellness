@@ -4,6 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { SplashScreen } from '@/components/screens/SplashScreen';
 import { OnboardingScreen } from '@/components/screens/OnboardingScreen';
 import { Header } from '@/components/Header';
+import { TodayTab } from '@/components/tabs/TodayTab';
+import { RelationshipsTab } from '@/components/tabs/RelationshipsTab';
+import { DynamicsTab } from '@/components/tabs/DynamicsTab';
+import { ExploreTab } from '@/components/tabs/ExploreTab';
 import { VaultTab } from '@/components/tabs/VaultTab';
 import { RitualsTab } from '@/components/tabs/RitualsTab';
 import { CouplesDynamicsTab } from '@/components/tabs/CouplesDynamicsTab';
@@ -17,7 +21,8 @@ import { Footer } from '@/components/Footer';
 
 export default function Home() {
   const [screenMode, setScreenMode] = useState<'splash' | 'onboarding' | 'app'>('splash');
-  const [activeTab, setActiveTab] = useState<string>('vault');
+  const [activeTab, setActiveTab] = useState<string>('today');
+  const [selectedDynamicId, setSelectedDynamicId] = useState<string | undefined>(undefined);
   const [isEmergencyOpen, setIsEmergencyOpen] = useState<boolean>(false);
   const [isStealthActive, setIsStealthActive] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<'Wearer' | 'Keyholder' | 'Explorer'>('Wearer');
@@ -82,13 +87,45 @@ export default function Home() {
 
           {/* Spacious Main Canvas */}
           <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+            {activeTab === 'today' && (
+              <TodayTab
+                onNavigateTab={setActiveTab}
+                onOpenEmergency={() => setIsEmergencyOpen(true)}
+                userRole={userRole}
+              />
+            )}
+
+            {activeTab === 'relationships' && (
+              <RelationshipsTab
+                onNavigateDynamic={(dynamicId) => {
+                  setSelectedDynamicId(dynamicId);
+                  setActiveTab('dynamics');
+                }}
+              />
+            )}
+
+            {activeTab === 'dynamics' && (
+              <DynamicsTab
+                initialDynamicId={selectedDynamicId}
+                onOpenEmergency={() => setIsEmergencyOpen(true)}
+              />
+            )}
+
+            {activeTab === 'explore' && (
+              <ExploreTab
+                onOpenEmergency={() => setIsEmergencyOpen(true)}
+                onNavigateTab={setActiveTab}
+              />
+            )}
+
+            {/* Direct access fallbacks to keep legacy and footer links robust */}
             {activeTab === 'vault' && (
               <VaultTab onOpenEmergency={() => setIsEmergencyOpen(true)} />
             )}
 
             {activeTab === 'rituals' && <RitualsTab />}
 
-            {activeTab === 'dynamics' && <CouplesDynamicsTab />}
+            {activeTab === 'couples' && <CouplesDynamicsTab />}
 
             {activeTab === 'boundaries' && <BoundariesTab />}
 

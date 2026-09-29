@@ -3,6 +3,11 @@
  * 
  * Re-architected around:
  * User -> Relationship -> Dynamic -> Agreement -> Session / Ritual / Check-in
+ * 
+ * Storage note:
+ * Current client persistence uses privacy-aware local storage (browser localStorage).
+ * It is NOT cryptographically encrypted storage. Full end-to-end cryptographic protection
+ * is a future architectural target.
  */
 
 // ==========================================
@@ -16,6 +21,8 @@ export interface UserPrivacySettings {
   maskSensitiveContent: boolean;
   stealthDisguise: 'spreadsheet' | 'notes' | 'calendar';
   autoStealthTimeoutMinutes?: number;
+  /** Storage posture: privacy-aware local storage */
+  storageType?: 'privacy_aware_local_storage';
 }
 
 export interface User {
@@ -58,6 +65,15 @@ export interface Relationship {
 // 3. DYNAMIC
 // ==========================================
 export type DynamicStatus = 'exploring' | 'negotiating' | 'active' | 'paused' | 'retired';
+export type DynamicType = 'chastity_practice' | 'power_exchange' | 'sensory_service' | 'emotional_intimacy' | 'service_oriented' | 'custom' | string;
+
+export interface DynamicParticipantRole {
+  userId: string;
+  roleTitle: string;
+  canApprovePermissions?: boolean;
+  canInitiateSessions?: boolean;
+  canModifyAgreements?: boolean;
+}
 
 export interface DynamicHistoryEntry {
   timestamp: string;
@@ -71,13 +87,16 @@ export interface Dynamic {
   relationshipId: string;
   name: string;
   description?: string;
-  participantIds: string[];
-  category: string; // e.g., 'chastity', 'power_exchange', 'long_distance', 'weekend_ritual', 'cuckold_hotwife', 'teasing', 'service', 'custom'
+  category?: string;
+  dynamicType?: DynamicType;
+  participantIds?: string[];
+  participantRoles?: DynamicParticipantRole[];
   status: DynamicStatus;
   startDate?: string;
-  endDate?: string; // Optional for temporary experiments (e.g. Weekend Dynamic)
-  toolboxIds: string[]; // Toolboxes plugged into this dynamic
-  history: DynamicHistoryEntry[];
+  endDate?: string;
+  toolboxIds?: string[];
+  activeAgreementsCount?: number;
+  history?: DynamicHistoryEntry[];
   createdAt: string;
   updatedAt: string;
 }
@@ -85,7 +104,7 @@ export interface Dynamic {
 // ==========================================
 // 4. AGREEMENT & NEGOTIATION
 // ==========================================
-export type AgreementScope = 'interest' | 'boundary' | 'agreement' | 'rule' | 'active_state';
+export type AgreementScope = 'interest' | 'boundary' | 'agreement' | 'rule' | 'active_state' | 'safety_boundary' | 'protocol' | 'custom';
 export type ConsentStatus = 'agreed' | 'pending' | 'declined' | 'paused' | 'revoked' | 'expired';
 export type NegotiationResponse = 'definitely_interested' | 'interested' | 'maybe' | 'unsure' | 'not_interested' | 'hard_boundary';
 
@@ -109,13 +128,21 @@ export interface Agreement {
   dynamicId: string;
   relationshipId: string;
   title: string;
-  scope: AgreementScope;
-  content: string;
-  participantResponses: AgreementParticipantResponse[];
-  status: ConsentStatus;
+  scope?: AgreementScope;
+  category?: string;
+  content?: string;
+  description?: string;
+  participantResponses?: AgreementParticipantResponse[];
+  status?: ConsentStatus;
+  negotiationStatus?: string;
+  enforcementMode?: string;
+  proposedBy?: string;
+  agreedBy?: string[];
+  agreedAt?: string;
+  version?: number;
   effectiveFrom?: string;
   expiresAt?: string;
-  revisionHistory: AgreementRevision[];
+  revisionHistory?: AgreementRevision[];
   revokedAt?: string;
   revocationReason?: string;
   createdAt: string;
@@ -136,19 +163,22 @@ export interface PermissionRequestHistory {
 
 export interface DomainPermissionRequest {
   id: string;
-  requesterId: string;
-  recipientIds: string[];
+  requesterId?: string;
+  requestedBy?: string;
+  recipientIds?: string[];
+  assignedTo?: string;
   relationshipId: string;
   dynamicId: string;
-  requestType: string; // e.g. 'hygiene_shower', 'temporary_release', 'intimacy_session', 'comfort_adjustment', 'custom'
+  requestType?: string;
+  type?: string;
   title: string;
   description?: string;
   conditions?: string;
   durationMinutes?: number;
-  status: PermissionRequestStatus;
+  status: PermissionRequestStatus | 'rejected';
   responseNote?: string;
   expiresAt?: string;
-  history: PermissionRequestHistory[];
+  history?: PermissionRequestHistory[];
   createdAt: string;
   updatedAt: string;
 }
@@ -163,8 +193,10 @@ export interface SessionWellnessEntry {
   reportedBy: string;
   circulationStatus?: 'normal' | 'pressure' | 'numb_alert';
   skinCondition?: 'intact' | 'redness' | 'irritation_alert';
-  comfortScore?: number; // 1-5
-  note?: string;
+  comfortScore?: number;
+  comfortLevel?: number;
+  skinIntegrityOk?: boolean;
+  notes?: string;
 }
 
 export interface SessionEmotionalEntry {
@@ -255,7 +287,7 @@ export interface CheckIn {
 // ==========================================
 // 9. TOOLBOX
 // ==========================================
-export type ToolboxCategory = 'relationships' | 'dynamics' | 'safety' | 'wellness';
+export type ToolboxCategory = 'relationships' | 'dynamics' | 'safety' | 'wellness' | 'communication';
 
 export interface Toolbox {
   id: string;
@@ -289,6 +321,20 @@ export interface MeetupSafetyDetails {
   status: 'planned' | 'active' | 'checked_in' | 'completed' | 'escalation_needed';
 }
 
+/**
+ * Isolated sensitive health alert:
+ * Sensitive health/medical information is never part of a general medical profile,
+ * never visible on general profiles, and never included in ordinary relationship summaries.
+ * It is strictly optional, explicitly entered by the user, private by default, and separately permissioned.
+ */
+export interface IsolatedSensitiveHealthAlert {
+  id: string;
+  conditionDescription: string;
+  notes?: string;
+  permissionedParticipantIds: string[];
+  isPrivateByDefault: boolean;
+}
+
 export interface SafetyPlan {
   id: string;
   userId: string;
@@ -298,7 +344,7 @@ export interface SafetyPlan {
   emergencyPhysicalKeyLocation?: string;
   emergencyRemovalToolLocation?: string;
   emergencyInstructions?: string;
-  medicalConditionsAlert?: string[];
+  isolatedHealthAlerts?: IsolatedSensitiveHealthAlert[];
   meetupSafety?: MeetupSafetyDetails;
   createdAt: string;
   updatedAt: string;
